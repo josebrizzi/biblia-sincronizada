@@ -1,291 +1,373 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proyección - Biblia Sincronizada</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-      background: #ffffff;
-      color: #111;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .proyeccion {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 5vh 7vw;
-      position: relative;
-    }
-    .reference {
-      font-family: 'Montserrat', 'Inter', sans-serif;
-      font-weight: 900;
-      width: 100%;
-      text-align: center;
-      font-size: clamp(30px, 4.2vw, 54px);
-      margin-bottom: 4vh;
-      color: #173f35;
-    }
-    /* Tamaño de letra FIJO: nunca se achica */
-    .text {
-      width: 100%;
-      max-height: 76vh;
-      overflow-y: auto;
-      padding: 0 2vw;
-      font-size: clamp(36px, 5vw, 74px);
-      font-weight: 700;
-      line-height: 1.5;
-      text-align: left;
-      color: #111;
-      scrollbar-width: thin;
-    }
-    .text::-webkit-scrollbar { width: 8px; }
-    .text::-webkit-scrollbar-thumb { background: #bbb; border-radius: 8px; }
-    .version {
-      width: 100%;
-      text-align: center;
-      margin-top: 4vh;
-      font-size: clamp(18px, 2vw, 26px);
-      color: #666;
-    }
-    .waiting { text-align: center; color: #777; }
-    .fullscreen-button {
-      position: fixed; right: 18px; bottom: 18px;
-      width: 44px; height: 44px; border: none; border-radius: 50%;
-      background: rgba(0,0,0,0.15); color: #333; cursor: pointer;
-      font-size: 20px; opacity: 0.35; transition: opacity 0.2s;
-    }
-    .fullscreen-button:hover { opacity: 1; }
-    #partBadge {
-      position: fixed; right: 74px; bottom: 18px;
-      padding: 9px 16px; border-radius: 22px;
-      background: #173f35; color: #fff;
-      font-family: Arial, sans-serif; font-size: 15px; font-weight: bold;
-      display: none; cursor: pointer; opacity: 0.9;
-    }
-    .status {
-      position: fixed; left: 15px; bottom: 15px;
-      padding: 6px 10px; border-radius: 20px;
-      background: #ddd; color: #555; font-size: 12px; opacity: 0.45;
-    }
-    .status.connected { background: #dcece5; color: #173f35; }
-    mark { background-color: #ffff00; }
-    @media (max-width: 600px) {
-      .proyeccion { padding: 4vh 5vw; }
-      .reference { margin-bottom: 3vh; }
-      .text { padding: 0 1vw; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biblia Sincronizada — Predicador</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; font-family: Arial, sans-serif; background: #f4f1ea; color: #222; }
+  header { background: #173f35; color: white; padding: 18px 24px; }
+  header h1 { margin: 0; font-size: 26px; }
+  header p { margin: 5px 0 0; opacity: 0.85; }
+  main { max-width: 1100px; margin: 25px auto; padding: 0 18px; }
+  .panel { background: white; border-radius: 14px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+  label { display: block; font-weight: bold; margin-bottom: 6px; }
+  select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; background: white; }
+  .reference { margin-top: 18px; font-size: 20px; font-weight: bold; }
+  .verses { margin-top: 20px; max-height: 430px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; }
+  .verse { display: flex; gap: 12px; padding: 13px; border-bottom: 1px solid #eee; cursor: pointer; }
+  .verse:last-child { border-bottom: none; }
+  .verse:hover { background: #f4f7f5; }
+  .verse.selected { background: #dcece5; outline: 2px solid #173f35; }
+  .verse-number { min-width: 32px; font-weight: bold; color: #173f35; }
+  .verse-text { line-height: 1.5; }
+  .actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  button { border: none; border-radius: 9px; padding: 14px 22px; font-size: 17px; font-weight: bold; cursor: pointer; }
+  #editVerseButton { background: #b45309; color: white; flex: 1; }
+  #editVerseButton:disabled { background: #ccc; cursor: not-allowed; }
+  #partButton { background: #173f35; color: white; display: none; }
+  #clearButton { background: #ddd; color: #222; }
+  .free-text-panel { margin-top: 20px; padding: 18px; border: 1px solid #ddd; border-radius: 12px; background: #fafafa; display: none; }
+  .free-text-panel.visible { display: block; }
+  .free-text-panel > label { display: block; margin-bottom: 8px; font-weight: bold; color: #b45309; }
+  .quote-editor {
+    width: 100%; min-height: 140px; max-height: 340px; overflow-y: auto;
+    box-sizing: border-box; padding: 14px; border: 1px solid #ccc; border-radius: 9px;
+    background: white; font-family: Arial, sans-serif;
+    font-size: 19px; line-height: 1.9; outline: none; user-select: none;
+  }
+  .palabra { cursor: pointer; border-radius: 3px; }
+  .palabra.resaltada { background-color: #ffff00; }
+  .modo-edicion {
+    margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+    background: #fff7e0; border: 1px solid #e6c96a; color: #7a5c00;
+    font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .modo-edicion button { background: none; color: #7a5c00; padding: 6px 10px; font-size: 14px; text-decoration: underline; }
+  .status { margin-top: 15px; padding: 10px; border-radius: 8px; background: #f1f1f1; }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 22px; }
+  }
+</style>
 </head>
 <body>
-  <main id="main" class="proyeccion">
-    <div id="reference" class="reference">Biblia Sincronizada</div>
-    <div id="text" class="text waiting">Esperando que el predicador proyecte un versículo...</div>
-    <div id="version" class="version"></div>
-  </main>
-  <button id="fullscreenButton" class="fullscreen-button" title="Pantalla completa">⛶</button>
-  <div id="partBadge">Parte 1 de 2 ▶</div>
-  <div id="status" class="status">Conectando...</div>
-  <script>
-    const reference = document.getElementById("reference");
-    const text = document.getElementById("text");
-    const version = document.getElementById("version");
-    const status = document.getElementById("status");
-    const fullscreenButton = document.getElementById("fullscreenButton");
-    const partBadge = document.getElementById("partBadge");
-    const main = document.getElementById("main");
+<header>
+  <h1>📖 Biblia Sincronizada</h1>
+  <p>Panel del predicador</p>
+</header>
+<main>
+  <section class="panel">
+    <div class="grid">
+      <div>
+        <label for="version">Versión</label>
+        <select id="version"><option value="">Cargando...</option></select>
+      </div>
+      <div>
+        <label for="book">Libro</label>
+        <select id="book" disabled><option value="">Seleccione una versión</option></select>
+      </div>
+      <div>
+        <label for="chapter">Capítulo</label>
+        <select id="chapter" disabled><option value="">Seleccione un libro</option></select>
+      </div>
+    </div>
 
-    let ws;
-    let ultimoData = null;   // último versículo recibido
-    let ultimoRef = "";      // referencia del último versículo
-    let divisiones = [];     // cómo quedó cortado el versículo
-    let totalPartes = 1;
-    let parteActual = 0;
+    <div class="reference" id="reference">Seleccione una referencia</div>
 
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    }
+    <div class="verses" id="verses">
+      <div style="padding:20px; color:#777;">Seleccione versión, libro y capítulo.</div>
+    </div>
 
-    // Une las palabras en HTML; las resaltadas consecutivas van en un solo <mark>
-    function palabrasAHtml(palabras, desde, hasta) {
-      let html = "";
-      let enMark = false;
-      for (let i = desde; i < hasta; i++) {
-        const w = palabras[i];
-        if (w.h && !enMark) { html += "<mark>"; enMark = true; }
-        if (!w.h && enMark) { html += "</mark>"; enMark = false; }
-        html += escapeHtml(w.t);
-        if (i < hasta - 1) html += " ";
-      }
-      if (enMark) html += "</mark>";
-      return html;
-    }
+    <div class="actions">
+      <button id="editVerseButton" disabled>🖍️ Resaltar palabras</button>
+      <button id="partButton">▶️ Parte 2</button>
+      <button id="clearButton">Limpiar</button>
+    </div>
 
-    // Muestra el versículo completo; si no entra, lo corta en 2 por la mitad
-    function medirYDividir(palabras) {
-      text.className = "text";
-      text.innerHTML = palabrasAHtml(palabras, 0, palabras.length);
-      if (text.scrollHeight <= text.clientHeight + 2) {
-        return [{ from: 0, to: palabras.length }];
-      }
-      const total = palabras.reduce((a, w) => a + w.t.length + 1, 0);
-      let acc = 0, corte = Math.floor(palabras.length / 2);
-      for (let i = 0; i < palabras.length; i++) {
-        acc += palabras[i].t.length + 1;
-        if (acc >= total / 2) { corte = i; break; }
-      }
-      corte = Math.max(1, Math.min(corte, palabras.length - 1));
-      return [{ from: 0, to: corte }, { from: corte, to: palabras.length }];
-    }
+    <div class="free-text-panel" id="panelResaltar">
+      <label>🖍️ TOCÁ LAS PALABRAS QUE QUERÉS RESALTAR — se proyectan al instante</label>
+      <div id="freeText" class="quote-editor"></div>
+      <div class="modo-edicion">
+        <span id="modoTexto"></span>
+        <button type="button" id="salirEdicion">✕ Terminar y volver al versículo limpio</button>
+      </div>
+    </div>
 
-    function mostrarVerse(data) {
-      ultimoData = data;
-      const ref = `${data.bookName} ${data.chapter}:${data.verse}`;
-      const mismaRef = (ref === ultimoRef);
-      ultimoRef = ref;
-      reference.textContent = ref;
-      version.textContent = data.version || "";
+    <div class="status">
+      Estado WebSocket: <span id="wsStatus">Conectando...</span>
+      | Conectados: <span id="connectedCount">0</span>
+    </div>
+  </section>
+</main>
 
-      divisiones = medirYDividir(data.words || []);
-      totalPartes = divisiones.length;
-      if (totalPartes === 1) {
-        parteActual = 0;
-      } else if (!(mismaRef && parteActual > 0 && parteActual < totalPartes)) {
-        parteActual = 0;
-      }
-      if (totalPartes > 1) {
-        text.innerHTML = palabrasAHtml(data.words, divisiones[parteActual].from, divisiones[parteActual].to);
-      }
-      text.scrollTop = 0;
-      actualizarBadge();
-      avisarPartes();
-    }
+<script>
+  const versionSelect = document.getElementById("version");
+  const bookSelect = document.getElementById("book");
+  const chapterSelect = document.getElementById("chapter");
+  const versesContainer = document.getElementById("verses");
+  const referenceElement = document.getElementById("reference");
+  const clearButton = document.getElementById("clearButton");
+  const editVerseButton = document.getElementById("editVerseButton");
+  const partButton = document.getElementById("partButton");
+  const freeText = document.getElementById("freeText");
+  const panelResaltar = document.getElementById("panelResaltar");
+  const modoTexto = document.getElementById("modoTexto");
+  const salirEdicion = document.getElementById("salirEdicion");
+  const wsStatus = document.getElementById("wsStatus");
+  const connectedCount = document.getElementById("connectedCount");
 
-    function mostrarFree(data) {
-      ultimoData = null;
-      ultimoRef = "";
-      totalPartes = 1;
-      parteActual = 0;
-      reference.textContent = "Cita";
-      text.className = "text";
-      text.innerHTML = data.html || "";
-      version.textContent = "";
-      text.scrollTop = 0;
-      actualizarBadge();
-      avisarPartes();
-    }
+  let ws = null;
+  let currentVerses = [];
+  let selectedVerse = null;
+  let selectedBookName = "";
+  let versiculoEnEdicion = null;
+  let parteRemota = 1;
 
-    function mostrarProyeccion(data) {
-      if (!data) return;
-      if (data.type === "verse") mostrarVerse(data);
-      else if (data.type === "freeText") mostrarFree(data);
-      else if (data.type === "goto-part") irAParte((data.part || 1) - 1);
-      // "parts-info" (eco propio) se ignora
-    }
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
 
-    function irAParte(n) {
-      if (!ultimoData || !ultimoData.words) return;
-      if (n < 0 || n >= totalPartes) return;
-      parteActual = n;
-      text.innerHTML = palabrasAHtml(ultimoData.words, divisiones[n].from, divisiones[n].to);
-      text.scrollTop = 0;
-      actualizarBadge();
-      avisarPartes();
-    }
-
-    function siguiente() { irAParte(parteActual + 1); }
-    function anterior() { irAParte(parteActual - 1); }
-
-    function actualizarBadge() {
-      if (totalPartes > 1) {
-        partBadge.style.display = "block";
-        partBadge.textContent = "Parte " + (parteActual + 1) + " de " + totalPartes +
-          (parteActual + 1 < totalPartes ? "  ▶" : "");
-      } else {
-        partBadge.style.display = "none";
-      }
-    }
-
-    // Avisa al celular cuántas partes hay y en cuál está
-    function avisarPartes() {
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      ws.send(JSON.stringify({
-        type: "project",
-        reference: "",
-        data: { type: "parts-info", count: totalPartes, current: parteActual + 1 }
-      }));
-    }
-
-    // Controles en la PC: clic en la pantalla, flechas o barra espaciadora
-    main.addEventListener("click", siguiente);
-    partBadge.addEventListener("click", siguiente);
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); siguiente(); }
-      else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); anterior(); }
-    });
-
-    // Si cambia el tamaño de la ventana o entra a pantalla completa, se vuelve a medir
-    let resizeTimer;
-    window.addEventListener("resize", () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { if (ultimoData) mostrarVerse(ultimoData); }, 200);
-    });
-    document.addEventListener("fullscreenchange", () => {
-      setTimeout(() => { if (ultimoData) mostrarVerse(ultimoData); }, 200);
-    });
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => { if (ultimoData) mostrarVerse(ultimoData); });
-    }
-
-    function conectar() {
-      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      ws = new WebSocket(`${protocol}//${location.host}`);
-      ws.addEventListener("open", () => {
-        status.textContent = "Conectado";
-        status.classList.add("connected");
-      });
-      ws.addEventListener("close", () => {
-        status.textContent = "Desconectado";
-        status.classList.remove("connected");
-        setTimeout(conectar, 2000);
-      });
-      ws.addEventListener("error", () => {
-        status.textContent = "Error de conexión";
-        status.classList.remove("connected");
-      });
-      ws.addEventListener("message", (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          if (message.type === "projection") mostrarProyeccion(message.data);
-        } catch (error) { console.error(error); }
-      });
-    }
-
-    async function pantallaCompleta() {
+  function connectWebSocket() {
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    ws = new WebSocket(`${protocol}//${location.host}`);
+    ws.addEventListener("open", () => { wsStatus.textContent = "Conectado"; });
+    ws.addEventListener("close", () => { wsStatus.textContent = "Desconectado"; setTimeout(connectWebSocket, 2000); });
+    ws.addEventListener("error", () => { wsStatus.textContent = "Error"; });
+    ws.addEventListener("message", (event) => {
       try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        } else {
-          await document.exitFullscreen();
+        const data = JSON.parse(event.data);
+        if (data.type === "connected") {
+          connectedCount.textContent = data.count;
+        } else if (data.type === "projection") {
+          const d = data.data || {};
+          if (d.type === "parts-info") {
+            // La pantalla informa si el versículo se cortó en 2 partes
+            if (d.count > 1) {
+              parteRemota = d.current || 1;
+              partButton.style.display = "";
+              partButton.textContent = parteRemota === 1 ? "▶️  Parte 2" : "◀️  Parte 1";
+            } else {
+              partButton.style.display = "none";
+            }
+          } else if (d.type === "verse" || d.type === "freeText") {
+            partButton.style.display = "none";
+          }
         }
       } catch (error) { console.error(error); }
-    }
+    });
+  }
 
-    fullscreenButton.addEventListener("click", pantallaCompleta);
-    conectar();
-  </script>
+  async function cargarVersiones() {
+    const response = await fetch("./api/versions");
+    const versions = await response.json();
+    versionSelect.innerHTML = '<option value="">Seleccione una versión</option>';
+    versions.forEach(version => {
+      const option = document.createElement("option");
+      option.value = version;
+      option.textContent = version;
+      versionSelect.appendChild(option);
+    });
+  }
+
+  async function cargarLibros() {
+    const version = versionSelect.value;
+    bookSelect.innerHTML = '<option value="">Cargando...</option>';
+    bookSelect.disabled = true;
+    chapterSelect.innerHTML = '<option value="">Seleccione un libro</option>';
+    chapterSelect.disabled = true;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Seleccione un capítulo.</div>';
+    if (!version) return;
+    const response = await fetch("./api/books?version=" + encodeURIComponent(version));
+    const books = await response.json();
+    bookSelect.innerHTML = '<option value="">Seleccione un libro</option>';
+    books.forEach(book => {
+      const option = document.createElement("option");
+      option.value = book.book_number;
+      option.textContent = book.book_name;
+      option.dataset.name = book.book_name;
+      bookSelect.appendChild(option);
+    });
+    bookSelect.disabled = false;
+  }
+
+  async function cargarCapitulos() {
+    const version = versionSelect.value;
+    const book = bookSelect.value;
+    selectedBookName = bookSelect.options[bookSelect.selectedIndex]?.dataset.name || "";
+    chapterSelect.innerHTML = '<option value="">Cargando...</option>';
+    chapterSelect.disabled = true;
+    if (!book) return;
+    const response = await fetch(`./api/chapters?version=${encodeURIComponent(version)}&book=${book}`);
+    const chapters = await response.json();
+    chapterSelect.innerHTML = '<option value="">Seleccione un capítulo</option>';
+    chapters.forEach(chapter => {
+      const option = document.createElement("option");
+      option.value = chapter;
+      option.textContent = chapter;
+      chapterSelect.appendChild(option);
+    });
+    chapterSelect.disabled = false;
+  }
+
+  async function cargarVersiculos() {
+    const version = versionSelect.value;
+    const book = bookSelect.value;
+    const chapter = chapterSelect.value;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Cargando...</div>';
+    currentVerses = [];
+    selectedVerse = null;
+    editVerseButton.disabled = true;
+    salirModoPalabras(false);
+    if (!chapter) return;
+    const response = await fetch(`./api/verses?version=${encodeURIComponent(version)}&book=${book}&chapter=${chapter}`);
+    currentVerses = await response.json();
+    mostrarVersiculos();
+  }
+
+  function mostrarVersiculos() {
+    versesContainer.innerHTML = "";
+    currentVerses.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "verse";
+      div.dataset.verse = item.verse;
+      div.innerHTML = `
+        <div class="verse-number">${item.verse}</div>
+        <div class="verse-text">${escapeHtml(item.text)}</div>
+      `;
+      div.addEventListener("click", () => {
+        document.querySelectorAll(".verse").forEach(element => element.classList.remove("selected"));
+        div.classList.add("selected");
+        selectedVerse = item.verse;
+        editVerseButton.disabled = false;
+        salirModoPalabras(false); // limpia el resaltado anterior
+        actualizarReferencia();
+        proyectar();
+      });
+      versesContainer.appendChild(div);
+    });
+  }
+
+  function actualizarReferencia() {
+    if (!versionSelect.value || !selectedBookName || !chapterSelect.value || !selectedVerse) {
+      referenceElement.textContent = "Seleccione una referencia";
+      return;
+    }
+    referenceElement.textContent = `${selectedBookName} ${chapterSelect.value}:${selectedVerse} — ${versionSelect.value}`;
+  }
+
+  // Proyecta el versículo limpio (palabras sin resaltar)
+  function proyectar() {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !selectedVerse) return;
+    const verse = currentVerses.find(item => Number(item.verse) === Number(selectedVerse));
+    if (!verse) return;
+    const words = String(verse.text).replace(/\s+/g, " ").trim().split(" ")
+      .filter(Boolean).map(t => ({ t: t, h: 0 }));
+    ws.send(JSON.stringify({
+      type: "project",
+      reference: `${selectedBookName} ${chapterSelect.value}:${verse.verse}`,
+      data: {
+        type: "verse",
+        words: words,
+        version: versionSelect.value,
+        bookName: selectedBookName,
+        chapter: Number(chapterSelect.value),
+        verse: Number(verse.verse)
+      }
+    }));
+  }
+
+  // ---- MODO RESALTAR: tocar palabra = resaltar + proyectar al instante ----
+  function activarModoPalabras(textoPlano, info) {
+    const palabras = String(textoPlano).replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+    freeText.innerHTML = palabras.map(p => `<span class="palabra">${escapeHtml(p)}</span>`).join(" ");
+    versiculoEnEdicion = info || null;
+    modoTexto.textContent = "Resaltando: " + info.referencia;
+    panelResaltar.classList.add("visible");
+    freeText.scrollTop = 0;
+  }
+
+  function salirModoPalabras(reproyectarLimpio) {
+    freeText.innerHTML = "";
+    versiculoEnEdicion = null;
+    panelResaltar.classList.remove("visible");
+    if (reproyectarLimpio && selectedVerse) proyectar();
+  }
+
+  freeText.addEventListener("click", (e) => {
+    if (!e.target.classList || !e.target.classList.contains("palabra")) return;
+    e.target.classList.toggle("resaltada");
+    autoProyectar();
+  });
+
+  function autoProyectar() {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !versiculoEnEdicion) return;
+    const words = Array.from(freeText.querySelectorAll("span.palabra"))
+      .map(s => ({ t: s.textContent, h: s.classList.contains("resaltada") ? 1 : 0 }));
+    if (!words.length) return;
+    ws.send(JSON.stringify({
+      type: "project",
+      reference: versiculoEnEdicion.referencia,
+      data: {
+        type: "verse",
+        words: words,
+        version: versiculoEnEdicion.version,
+        bookName: versiculoEnEdicion.bookName,
+        chapter: versiculoEnEdicion.chapter,
+        verse: versiculoEnEdicion.verse
+      }
+    }));
+  }
+
+  editVerseButton.addEventListener("click", () => {
+    const verse = currentVerses.find(item => Number(item.verse) === Number(selectedVerse));
+    if (!verse) return;
+    activarModoPalabras(verse.text, {
+      referencia: `${selectedBookName} ${chapterSelect.value}:${verse.verse}`,
+      bookName: selectedBookName,
+      chapter: Number(chapterSelect.value),
+      verse: Number(verse.verse),
+      version: versionSelect.value
+    });
+  });
+
+  salirEdicion.addEventListener("click", () => salirModoPalabras(true));
+
+  // Botón Parte 1 / Parte 2 (aparece solo si el versículo se cortó)
+  partButton.addEventListener("click", () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({
+      type: "project",
+      reference: "",
+      data: { type: "goto-part", part: parteRemota === 1 ? 2 : 1 }
+    }));
+  });
+
+  function limpiar() {
+    versionSelect.value = "";
+    bookSelect.innerHTML = '<option value="">Seleccione una versión</option>';
+    bookSelect.disabled = true;
+    chapterSelect.innerHTML = '<option value="">Seleccione un libro</option>';
+    chapterSelect.disabled = true;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Seleccione versión, libro y capítulo.</div>';
+    referenceElement.textContent = "Seleccione una referencia";
+    selectedVerse = null;
+    currentVerses = [];
+    editVerseButton.disabled = true;
+    salirModoPalabras(false);
+  }
+
+  versionSelect.addEventListener("change", cargarLibros);
+  bookSelect.addEventListener("change", cargarCapitulos);
+  chapterSelect.addEventListener("change", cargarVersiculos);
+  clearButton.addEventListener("click", limpiar);
+
+  cargarVersiones();
+  connectWebSocket();
+</script>
 </body>
 </html>
