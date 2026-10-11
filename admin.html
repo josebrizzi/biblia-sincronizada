@@ -1,1059 +1,416 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Biblia Sincronizada — Predicador</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f1ea;
-      color: #222;
-    }
-
-    header {
-      background: #173f35;
-      color: white;
-      padding: 18px 24px;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 26px;
-    }
-
-    header p {
-      margin: 5px 0 0;
-      opacity: 0.85;
-    }
-
-    main {
-      max-width: 1100px;
-      margin: 25px auto;
-      padding: 0 18px;
-    }
-
-    .panel {
-      background: white;
-      border-radius: 14px;
-      padding: 22px;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-      background: white;
-    }
-
-    .reference {
-      margin-top: 18px;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .verses {
-      margin-top: 20px;
-      max-height: 430px;
-      overflow-y: auto;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-    }
-
-    .verse {
-      display: flex;
-      gap: 12px;
-      padding: 13px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .verse:last-child {
-      border-bottom: none;
-    }
-
-    .verse:hover {
-      background: #f4f7f5;
-    }
-
-    .verse.selected {
-      background: #dcece5;
-      outline: 2px solid #173f35;
-    }
-
-    .verse-number {
-      min-width: 32px;
-      font-weight: bold;
-      color: #173f35;
-    }
-
-    .verse-text {
-      line-height: 1.5;
-    }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      border: none;
-      border-radius: 9px;
-      padding: 14px 22px;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    #projectButton {
-      background: #173f35;
-      color: white;
-      flex: 1;
-    }
-
-    #projectButton:disabled {
-      background: #aaa;
-      cursor: not-allowed;
-    }
-
-    #clearButton {
-      background: #ddd;
-      color: #222;
-    }
-
-    .free-text-panel {
-      margin-top: 20px;
-      padding: 18px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      background: #fafafa;
-    }
-
-    .free-text-panel label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-      color: #173f35;
-    }
-
-    #freeText {
-      width: 100%;
-      min-height: 130px;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 9px;
-      resize: vertical;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 17px;
-      line-height: 1.5;
-    }
-
-    .quote-toolbar {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-
-    .quote-toolbar button {
-      min-width: 42px;
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 7px;
-      background: white;
-      color: #222;
-      cursor: pointer;
-      font-size: 17px;
-    }
-
-    .quote-toolbar button:hover {
-      background: #e9e9e9;
-    }
-
-    .quote-editor {
-      width: 100%;
-      min-height: 130px;
-      max-height: 300px;
-      overflow-y: auto;
-      box-sizing: border-box;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 9px;
-      background: white;
-      resize: vertical;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 17px;
-      line-height: 1.5;
-      outline: none;
-      white-space: pre-wrap;
-    }
-
-    .quote-editor:focus {
-      border-color: #173f35;
-      box-shadow: 0 0 0 2px rgba(23, 63, 53, 0.12);
-    }
-
-    .quote-editor:empty::before {
-      content: attr(data-placeholder);
-      color: #888;
-      pointer-events: none;
-    }
-
-    .free-text-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    #projectTextButton {
-      background: #173f35;
-      color: white;
-      flex: 1;
-    }
-
-    #clearTextButton {
-      background: #ddd;
-      color: #222;
-    }
-
-    .status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 8px;
-      background: #f1f1f1;
-    }
-
-    @media (max-width: 700px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      header h1 {
-        font-size: 22px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biblia Sincronizada — Predicador</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, sans-serif; background: #f4f1ea; color: #222; }
+  header { background: #173f35; color: white; padding: 18px 24px; }
+  header h1 { margin: 0; font-size: 26px; }
+  header p { margin: 5px 0 0; opacity: 0.85; }
+  main { max-width: 1100px; margin: 25px auto; padding: 0 18px; }
+  .panel { background: white; border-radius: 14px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+  label { display: block; font-weight: bold; margin-bottom: 6px; }
+  select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; background: white; }
+  .reference { margin-top: 18px; font-size: 20px; font-weight: bold; }
+  .verses { margin-top: 20px; max-height: 430px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; }
+  .verse { display: flex; gap: 12px; padding: 13px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.15s; }
+  .verse:last-child { border-bottom: none; }
+  .verse:hover { background: #f4f7f5; }
+  .verse.selected { background: #dcece5; outline: 2px solid #173f35; }
+  .verse-number { min-width: 32px; font-weight: bold; color: #173f35; }
+  .verse-text { line-height: 1.5; }
+  .actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  button { border: none; border-radius: 9px; padding: 14px 22px; font-size: 17px; font-weight: bold; cursor: pointer; }
+  #projectButton { background: #173f35; color: white; flex: 1; }
+  #projectButton:disabled { background: #aaa; cursor: not-allowed; }
+  #editVerseButton { background: #b45309; color: white; }
+  #editVerseButton:disabled { background: #ccc; cursor: not-allowed; }
+  #clearButton { background: #ddd; color: #222; }
+  .free-text-panel { margin-top: 20px; padding: 18px; border: 1px solid #ddd; border-radius: 12px; background: #fafafa; }
+  .free-text-panel label { display: block; margin-bottom: 8px; font-weight: bold; color: #173f35; }
+  .quote-toolbar { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .quote-toolbar button { min-width: 42px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 7px; background: white; color: #222; cursor: pointer; font-size: 17px; }
+  .quote-toolbar button:hover { background: #e9e9e9; }
+  #highlightButton { background: #fff59d; }
+  .quote-editor {
+    width: 100%; min-height: 130px; max-height: 300px; overflow-y: auto;
+    box-sizing: border-box; padding: 12px; border: 1px solid #ccc; border-radius: 9px;
+    background: white; resize: vertical; font-family: Arial, Helvetica, sans-serif;
+    font-size: 17px; line-height: 1.5; outline: none; white-space: pre-wrap;
+  }
+  .quote-editor:focus { border-color: #173f35; box-shadow: 0 0 0 2px rgba(23,63,53,0.12); }
+  .quote-editor:empty::before { content: attr(data-placeholder); color: #888; pointer-events: none; }
+  .free-text-actions { display: flex; gap: 10px; margin-top: 10px; }
+  #projectTextButton { background: #173f35; color: white; flex: 1; }
+  #clearTextButton { background: #ddd; color: #222; }
+  .modo-edicion {
+    display: none; margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+    background: #fff7e0; border: 1px solid #e6c96a; color: #7a5c00;
+    font-weight: bold; font-size: 15px;
+  }
+  .modo-edicion button {
+    background: none; border: none; color: #7a5c00; font-size: 16px;
+    padding: 2px 8px; cursor: pointer; text-decoration: underline;
+  }
+  .status { margin-top: 15px; padding: 10px; border-radius: 8px; background: #f1f1f1; }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 22px; }
+  }
+</style>
 </head>
-
 <body>
-
 <header>
   <h1>📖 Biblia Sincronizada</h1>
   <p>Panel del predicador</p>
 </header>
-
 <main>
-
   <section class="panel">
-
     <div class="grid">
-
       <div>
         <label for="version">Versión</label>
-        <select id="version">
-          <option value="">Cargando...</option>
-        </select>
+        <select id="version"><option value="">Cargando...</option></select>
       </div>
-
       <div>
         <label for="book">Libro</label>
-        <select id="book" disabled>
-          <option value="">Seleccione una versión</option>
-        </select>
+        <select id="book" disabled><option value="">Seleccione una versión</option></select>
       </div>
-
       <div>
         <label for="chapter">Capítulo</label>
-        <select id="chapter" disabled>
-          <option value="">Seleccione un libro</option>
-        </select>
+        <select id="chapter" disabled><option value="">Seleccione un libro</option></select>
       </div>
-
     </div>
 
-    <div class="reference" id="reference">
-      Seleccione una referencia
-    </div>
+    <div class="reference" id="reference">Seleccione una referencia</div>
 
     <div class="verses" id="verses">
-      <div style="padding:20px; color:#777;">
-        Seleccione versión, libro y capítulo.
-      </div>
+      <div style="padding:20px; color:#777;">Seleccione versión, libro y capítulo.</div>
     </div>
 
     <div class="actions">
-
-      <button id="projectButton" disabled>
-        📖 PROYECTAR
-      </button>
-
-      <button id="clearButton">
-        Limpiar
-      </button>
-
+      <button id="projectButton" disabled>📖 PROYECTAR</button>
+      <button id="editVerseButton" disabled title="Carga el versículo en el editor para resaltar">🖍️ Editar y resaltar</button>
+      <button id="clearButton">Limpiar</button>
     </div>
 
     <div class="free-text-panel">
-
-      <label for="freeText">
-        📖 Cita
-      </label>
-
+      <label for="freeText">📝 Editor (cita o versículo resaltado)</label>
       <div class="quote-toolbar">
         <button type="button" id="boldButton" title="Negrita"><b>N</b></button>
         <button type="button" id="underlineButton" title="Subrayado"><u>S</u></button>
         <button type="button" id="strikeButton" title="Tachado"><s>T</s></button>
         <button type="button" id="italicButton" title="Cursiva"><i>C</i></button>
+        <button type="button" id="highlightButton" title="Resaltar como fibón">🖍️</button>
         <button type="button" id="justifyButton" title="Justificar">≡</button>
       </div>
-
-      <div
-        id="freeText"
-        class="quote-editor"
-        contenteditable="true"
-        data-placeholder="Escriba aquí la cita que desea proyectar..."
-      ></div>
-
-      <div class="free-text-actions">
-
-        <button id="projectTextButton">
-          📖 PROYECTAR CITA
-        </button>
-
-        <button id="clearTextButton">
-          Borrar texto
-        </button>
-
+      <div id="freeText" class="quote-editor" contenteditable="true"
+           data-placeholder="Escriba aquí la cita, o use «Editar y resaltar» para marcar un versículo..."></div>
+      <div class="modo-edicion" id="modoEdicion">
+        <span id="modoTexto"></span>
+        <button type="button" id="salirEdicion">✕ salir (proyectar sin resaltado)</button>
       </div>
-
+      <div class="free-text-actions">
+        <button id="projectTextButton">📖 PROYECTAR</button>
+        <button id="clearTextButton">Borrar texto</button>
+      </div>
     </div>
 
     <div class="status">
-      Estado WebSocket:
-      <span id="wsStatus">Conectando...</span>
-      |
-      Celulares conectados:
-      <span id="connectedCount">0</span>
+      Estado WebSocket: <span id="wsStatus">Conectando...</span>
+      | Conectados: <span id="connectedCount">0</span>
     </div>
-
   </section>
-
 </main>
 
 <script>
-
-  const versionSelect =
-    document.getElementById("version");
-
-  const bookSelect =
-    document.getElementById("book");
-
-  const chapterSelect =
-    document.getElementById("chapter");
-
-  const versesContainer =
-    document.getElementById("verses");
-
-  const referenceElement =
-    document.getElementById("reference");
-
-  const projectButton =
-    document.getElementById("projectButton");
-
-  const clearButton =
-    document.getElementById("clearButton");
-
-  const freeText =
-    document.getElementById("freeText");
-
-  const projectTextButton =
-    document.getElementById("projectTextButton");
-
-  const clearTextButton =
-    document.getElementById("clearTextButton");
-
-  const boldButton =
-    document.getElementById("boldButton");
-
-  const underlineButton =
-    document.getElementById("underlineButton");
-
-  const strikeButton =
-    document.getElementById("strikeButton");
-
-  const italicButton =
-    document.getElementById("italicButton");
-
-  const justifyButton =
-    document.getElementById("justifyButton");
-
-  const wsStatus =
-    document.getElementById("wsStatus");
-
-  const connectedCount =
-    document.getElementById("connectedCount");
+  const versionSelect = document.getElementById("version");
+  const bookSelect = document.getElementById("book");
+  const chapterSelect = document.getElementById("chapter");
+  const versesContainer = document.getElementById("verses");
+  const referenceElement = document.getElementById("reference");
+  const projectButton = document.getElementById("projectButton");
+  const clearButton = document.getElementById("clearButton");
+  const editVerseButton = document.getElementById("editVerseButton");
+  const freeText = document.getElementById("freeText");
+  const projectTextButton = document.getElementById("projectTextButton");
+  const clearTextButton = document.getElementById("clearTextButton");
+  const boldButton = document.getElementById("boldButton");
+  const underlineButton = document.getElementById("underlineButton");
+  const strikeButton = document.getElementById("strikeButton");
+  const italicButton = document.getElementById("italicButton");
+  const highlightButton = document.getElementById("highlightButton");
+  const justifyButton = document.getElementById("justifyButton");
+  const wsStatus = document.getElementById("wsStatus");
+  const connectedCount = document.getElementById("connectedCount");
+  const modoEdicion = document.getElementById("modoEdicion");
+  const modoTexto = document.getElementById("modoTexto");
+  const salirEdicion = document.getElementById("salirEdicion");
 
   let ws = null;
-
   let currentVerses = [];
-
   let selectedVerse = null;
-
   let selectedBookName = "";
+  let versiculoEnEdicion = null;
 
-
-  freeText.addEventListener(
-    "paste",
-    event => {
-
-      event.preventDefault();
-
-      const texto =
-        event.clipboardData.getData(
-          "text/plain"
-        );
-
-      let limpio =
-        texto
-          .replace(/\r\n/g, "\n")
-          .replace(/\r/g, "\n");
-
-      // Une palabras cortadas por guion
-      // al final de una línea.
-      limpio =
-        limpio.replace(
-          /-\n(?=\p{L})/gu,
-          ""
-        );
-
-      // Conserva los párrafos, pero elimina
-      // los saltos de línea propios del PDF.
-      limpio =
-        limpio
-          .replace(/\n{3,}/g, "\n\n")
-          .replace(/(?<!\n)\n(?!\n)/g, " ");
-
-      document.execCommand(
-        "insertText",
-        false,
-        limpio
-      );
-
-    }
-  );
-
+  freeText.addEventListener("paste", event => {
+    event.preventDefault();
+    const texto = event.clipboardData.getData("text/plain");
+    let limpio = texto.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    limpio = limpio.replace(/-\n(?=\p{L})/gu, "");
+    limpio = limpio.replace(/\n{3,}/g, "\n\n").replace(/(?<!\n)\n(?!\n)/g, " ");
+    document.execCommand("insertText", false, limpio);
+  });
 
   function aplicarFormato(comando) {
-
     freeText.focus();
-
-    document.execCommand(
-      comando,
-      false,
-      null
-    );
-
+    document.execCommand(comando, false, null);
+  }
+  function resaltar() {
+    freeText.focus();
+    document.execCommand("styleWithCSS", false, true);
+    document.execCommand("hiliteColor", false, "#ffff00");
   }
 
-
-  boldButton.addEventListener(
-    "mousedown",
-    event => {
-      event.preventDefault();
-      aplicarFormato("bold");
-    }
-  );
-
-  underlineButton.addEventListener(
-    "mousedown",
-    event => {
-      event.preventDefault();
-      aplicarFormato("underline");
-    }
-  );
-
-  strikeButton.addEventListener(
-    "mousedown",
-    event => {
-      event.preventDefault();
-      aplicarFormato("strikeThrough");
-    }
-  );
-
-  italicButton.addEventListener(
-    "mousedown",
-    event => {
-      event.preventDefault();
-      aplicarFormato("italic");
-    }
-  );
-
-
-  justifyButton.addEventListener(
-    "mousedown",
-    event => {
-      event.preventDefault();
-      aplicarFormato("justifyFull");
-    }
-  );
-
+  boldButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("bold"); });
+  underlineButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("underline"); });
+  strikeButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("strikeThrough"); });
+  italicButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("italic"); });
+  highlightButton.addEventListener("mousedown", e => { e.preventDefault(); resaltar(); });
+  justifyButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("justifyFull"); });
 
   function connectWebSocket() {
-
-    const protocol =
-      location.protocol === "https:"
-        ? "wss:"
-        : "ws:";
-
-    const wsBase =
-      location.pathname.startsWith("/biblia")
-        ? "/biblia"
-        : "";
-
-    ws = new WebSocket(
-      `${protocol}//${location.host}${wsBase}`
-    );
-
-    ws.addEventListener("open", () => {
-
-      wsStatus.textContent =
-        "Conectado";
-
-    });
-
-    ws.addEventListener("close", () => {
-
-      wsStatus.textContent =
-        "Desconectado";
-
-      setTimeout(
-        connectWebSocket,
-        2000
-      );
-
-    });
-
-    ws.addEventListener("error", () => {
-
-      wsStatus.textContent =
-        "Error";
-
-    });
-
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const wsBase = location.pathname.startsWith("/biblia") ? "/biblia" : "";
+    ws = new WebSocket(`${protocol}//${location.host}${wsBase}`);
+    ws.addEventListener("open", () => { wsStatus.textContent = "Conectado"; });
+    ws.addEventListener("close", () => { wsStatus.textContent = "Desconectado"; setTimeout(connectWebSocket, 2000); });
+    ws.addEventListener("error", () => { wsStatus.textContent = "Error"; });
     ws.addEventListener("message", (event) => {
-
       try {
-
-        const data =
-          JSON.parse(event.data);
-
-        if (data.type === "connected") {
-
-          connectedCount.textContent =
-            data.count;
-
-        }
-
-      } catch (error) {
-
-        console.error(error);
-
-      }
-
+        const data = JSON.parse(event.data);
+        if (data.type === "connected") connectedCount.textContent = data.count;
+      } catch (error) { console.error(error); }
     });
-
   }
-
 
   async function cargarVersiones() {
-
-    const response =
-      await fetch("./api/versions");
-
-    const versions =
-      await response.json();
-
-    versionSelect.innerHTML =
-      '<option value="">Seleccione una versión</option>';
-
+    const response = await fetch("./api/versions");
+    const versions = await response.json();
+    versionSelect.innerHTML = '<option value="">Seleccione una versión</option>';
     versions.forEach(version => {
-
-      const option =
-        document.createElement("option");
-
-      option.value =
-        version;
-
-      option.textContent =
-        version;
-
+      const option = document.createElement("option");
+      option.value = version;
+      option.textContent = version;
       versionSelect.appendChild(option);
-
     });
-
   }
-
 
   async function cargarLibros() {
-
-    const version =
-      versionSelect.value;
-
-    bookSelect.innerHTML =
-      '<option value="">Cargando...</option>';
-
-    bookSelect.disabled =
-      true;
-
-    chapterSelect.innerHTML =
-      '<option value="">Seleccione un libro</option>';
-
-    chapterSelect.disabled =
-      true;
-
-    versesContainer.innerHTML =
-      '<div style="padding:20px;color:#777;">Seleccione un capítulo.</div>';
-
-    if (!version) {
-      return;
-    }
-
-    const response =
-      await fetch(
-        "./api/books?version=" +
-        encodeURIComponent(version)
-      );
-
-    const books =
-      await response.json();
-
-    bookSelect.innerHTML =
-      '<option value="">Seleccione un libro</option>';
-
+    const version = versionSelect.value;
+    bookSelect.innerHTML = '<option value="">Cargando...</option>';
+    bookSelect.disabled = true;
+    chapterSelect.innerHTML = '<option value="">Seleccione un libro</option>';
+    chapterSelect.disabled = true;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Seleccione un capítulo.</div>';
+    if (!version) return;
+    const response = await fetch("./api/books?version=" + encodeURIComponent(version));
+    const books = await response.json();
+    bookSelect.innerHTML = '<option value="">Seleccione un libro</option>';
     books.forEach(book => {
-
-      const option =
-        document.createElement("option");
-
-      option.value =
-        book.book_number;
-
-      option.textContent =
-        book.book_name;
-
-      option.dataset.name =
-        book.book_name;
-
+      const option = document.createElement("option");
+      option.value = book.book_number;
+      option.textContent = book.book_name;
+      option.dataset.name = book.book_name;
       bookSelect.appendChild(option);
-
     });
-
-    bookSelect.disabled =
-      false;
-
+    bookSelect.disabled = false;
   }
-
 
   async function cargarCapitulos() {
-
-    const version =
-      versionSelect.value;
-
-    const book =
-      bookSelect.value;
-
-    selectedBookName =
-      bookSelect.options[
-        bookSelect.selectedIndex
-      ]?.dataset.name || "";
-
-    chapterSelect.innerHTML =
-      '<option value="">Cargando...</option>';
-
-    chapterSelect.disabled =
-      true;
-
-    if (!book) {
-      return;
-    }
-
-    const response =
-      await fetch(
-        `./api/chapters?version=${encodeURIComponent(version)}&book=${book}`
-      );
-
-    const chapters =
-      await response.json();
-
-    chapterSelect.innerHTML =
-      '<option value="">Seleccione un capítulo</option>';
-
+    const version = versionSelect.value;
+    const book = bookSelect.value;
+    selectedBookName = bookSelect.options[bookSelect.selectedIndex]?.dataset.name || "";
+    chapterSelect.innerHTML = '<option value="">Cargando...</option>';
+    chapterSelect.disabled = true;
+    if (!book) return;
+    const response = await fetch(`./api/chapters?version=${encodeURIComponent(version)}&book=${book}`);
+    const chapters = await response.json();
+    chapterSelect.innerHTML = '<option value="">Seleccione un capítulo</option>';
     chapters.forEach(chapter => {
-
-      const option =
-        document.createElement("option");
-
-      option.value =
-        chapter;
-
-      option.textContent =
-        chapter;
-
+      const option = document.createElement("option");
+      option.value = chapter;
+      option.textContent = chapter;
       chapterSelect.appendChild(option);
-
     });
-
-    chapterSelect.disabled =
-      false;
-
+    chapterSelect.disabled = false;
   }
-
 
   async function cargarVersiculos() {
-
-    const version =
-      versionSelect.value;
-
-    const book =
-      bookSelect.value;
-
-    const chapter =
-      chapterSelect.value;
-
-    versesContainer.innerHTML =
-      '<div style="padding:20px;color:#777;">Cargando...</div>';
-
+    const version = versionSelect.value;
+    const book = bookSelect.value;
+    const chapter = chapterSelect.value;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Cargando...</div>';
     currentVerses = [];
-
     selectedVerse = null;
-
-    projectButton.disabled =
-      true;
-
-    if (!chapter) {
-      return;
-    }
-
-    const response =
-      await fetch(
-        `./api/verses?version=${encodeURIComponent(version)}&book=${book}&chapter=${chapter}`
-      );
-
-    currentVerses =
-      await response.json();
-
+    projectButton.disabled = true;
+    editVerseButton.disabled = true;
+    if (!chapter) return;
+    const response = await fetch(`./api/verses?version=${encodeURIComponent(version)}&book=${book}&chapter=${chapter}`);
+    currentVerses = await response.json();
     mostrarVersiculos();
-
   }
-
 
   function mostrarVersiculos() {
-
-    versesContainer.innerHTML =
-      "";
-
+    versesContainer.innerHTML = "";
     currentVerses.forEach(item => {
-
-      const div =
-        document.createElement("div");
-
-      div.className =
-        "verse";
-
-      div.dataset.verse =
-        item.verse;
-
+      const div = document.createElement("div");
+      div.className = "verse";
+      div.dataset.verse = item.verse;
       div.innerHTML = `
-        <div class="verse-number">
-          ${item.verse}
-        </div>
-
-        <div class="verse-text">
-          ${escapeHtml(item.text)}
-        </div>
+        <div class="verse-number">${item.verse}</div>
+        <div class="verse-text">${escapeHtml(item.text)}</div>
       `;
-
-      div.addEventListener(
-        "click",
-        () => {
-
-          document
-            .querySelectorAll(".verse")
-            .forEach(element =>
-              element.classList.remove(
-                "selected"
-              )
-            );
-
-          div.classList.add(
-            "selected"
-          );
-
-          selectedVerse =
-            item.verse;
-
-          projectButton.disabled =
-            false;
-
-          actualizarReferencia();
-
-          proyectar();
-
-        }
-      );
-
-      versesContainer.appendChild(
-        div
-      );
-
+      div.addEventListener("click", () => {
+        document.querySelectorAll(".verse").forEach(element => element.classList.remove("selected"));
+        div.classList.add("selected");
+        selectedVerse = item.verse;
+        projectButton.disabled = false;
+        editVerseButton.disabled = false;
+        actualizarReferencia();
+        proyectar();
+      });
+      versesContainer.appendChild(div);
     });
-
   }
-
 
   function actualizarReferencia() {
-
-    if (
-      !versionSelect.value ||
-      !selectedBookName ||
-      !chapterSelect.value ||
-      !selectedVerse
-    ) {
-
-      referenceElement.textContent =
-        "Seleccione una referencia";
-
+    if (!versionSelect.value || !selectedBookName || !chapterSelect.value || !selectedVerse) {
+      referenceElement.textContent = "Seleccione una referencia";
       return;
-
     }
-
-    referenceElement.textContent =
-      `${selectedBookName} ${chapterSelect.value}:${selectedVerse} — ${versionSelect.value}`;
-
+    referenceElement.textContent = `${selectedBookName} ${chapterSelect.value}:${selectedVerse} — ${versionSelect.value}`;
   }
-
 
   function proyectar() {
-
-    if (
-      !ws ||
-      ws.readyState !==
-        WebSocket.OPEN ||
-      !selectedVerse
-    ) {
-      return;
-    }
-
-    const verse =
-      currentVerses.find(
-        item =>
-          Number(item.verse) ===
-          Number(selectedVerse)
-      );
-
-    if (!verse) {
-      return;
-    }
-
+    if (!ws || ws.readyState !== WebSocket.OPEN || !selectedVerse) return;
+    const verse = currentVerses.find(item => Number(item.verse) === Number(selectedVerse));
+    if (!verse) return;
     const data = {
-
-      version:
-        versionSelect.value,
-
-      bookNumber:
-        Number(bookSelect.value),
-
-      bookName:
-        selectedBookName,
-
-      chapter:
-        Number(chapterSelect.value),
-
-      verse:
-        Number(verse.verse),
-
-      text:
-        verse.text
-
+      version: versionSelect.value,
+      bookNumber: Number(bookSelect.value),
+      bookName: selectedBookName,
+      chapter: Number(chapterSelect.value),
+      verse: Number(verse.verse),
+      text: verse.text
     };
-
-    ws.send(
-      JSON.stringify({
-
-        type:
-          "project",
-
-        reference:
-          `${selectedBookName} ${chapterSelect.value}:${selectedVerse}`,
-
-        data
-
-      })
-    );
-
+    ws.send(JSON.stringify({
+      type: "project",
+      reference: `${selectedBookName} ${chapterSelect.value}:${selectedVerse}`,
+      data
+    }));
   }
 
+  function activarModoEdicion(info) {
+    versiculoEnEdicion = info;
+    freeText.innerHTML = escapeHtml(info.texto);
+    modoTexto.textContent = "🖍️ Resaltando: " + info.referencia;
+    modoEdicion.style.display = "block";
+    freeText.focus();
+  }
+
+  function desactivarModoEdicion() {
+    versiculoEnEdicion = null;
+    modoEdicion.style.display = "none";
+  }
+
+  editVerseButton.addEventListener("click", () => {
+    const verse = currentVerses.find(item => Number(item.verse) === Number(selectedVerse));
+    if (!verse) return;
+    activarModoEdicion({
+      referencia: `${selectedBookName} ${chapterSelect.value}:${verse.verse}`,
+      bookName: selectedBookName,
+      chapter: Number(chapterSelect.value),
+      verse: Number(verse.verse),
+      version: versionSelect.value,
+      texto: verse.text
+    });
+  });
+
+  salirEdicion.addEventListener("click", () => {
+    desactivarModoEdicion();
+    freeText.innerHTML = "";
+  });
 
   function proyectarTexto() {
-
-    if (
-      !ws ||
-      ws.readyState !== WebSocket.OPEN
-    ) {
-      return;
-    }
-
-    const contenido =
-      freeText.innerHTML.trim();
-
-    if (!contenido) {
-      return;
-    }
-
-    ws.send(
-      JSON.stringify({
-
-        type:
-          "project",
-
-        reference:
-          "Cita",
-
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const contenido = freeText.innerHTML.trim();
+    if (!contenido) return;
+    if (versiculoEnEdicion) {
+      ws.send(JSON.stringify({
+        type: "project",
+        reference: versiculoEnEdicion.referencia,
         data: {
-
-          type:
-            "freeText",
-
-          html:
-            contenido
-
+          type: "verse-html",
+          html: contenido,
+          bookName: versiculoEnEdicion.bookName,
+          chapter: versiculoEdicionChapter(),
+          verse: versiculoEnEdicion.verse,
+          version: versiculoEnEdicion.version
         }
-
-      })
-    );
-
+      }));
+    } else {
+      ws.send(JSON.stringify({
+        type: "project",
+        reference: "Cita",
+        data: { type: "freeText", html: contenido }
+      }));
+    }
   }
+
+  function versiculoEdicionChapter() { return versiculoEnEdicion.chapter; }
 
   function limpiar() {
-
-    versionSelect.value =
-      "";
-
-    bookSelect.innerHTML =
-      '<option value="">Seleccione una versión</option>';
-
-    bookSelect.disabled =
-      true;
-
-    chapterSelect.innerHTML =
-      '<option value="">Seleccione un libro</option>';
-
-    chapterSelect.disabled =
-      true;
-
-    versesContainer.innerHTML =
-      '<div style="padding:20px;color:#777;">Seleccione versión, libro y capítulo.</div>';
-
-    referenceElement.textContent =
-      "Seleccione una referencia";
-
-    selectedVerse =
-      null;
-
-    currentVerses =
-      [];
-
-    projectButton.disabled =
-      true;
-
+    versionSelect.value = "";
+    bookSelect.innerHTML = '<option value="">Seleccione una versión</option>';
+    bookSelect.disabled = true;
+    chapterSelect.innerHTML = '<option value="">Seleccione un libro</option>';
+    chapterSelect.disabled = true;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Seleccione versión, libro y capítulo.</div>';
+    referenceElement.textContent = "Seleccione una referencia";
+    selectedVerse = null;
+    currentVerses = [];
+    projectButton.disabled = true;
+    editVerseButton.disabled = true;
+    desactivarModoEdicion();
   }
 
-
   function escapeHtml(text) {
-
-    return text
+    return String(text)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
-
   }
 
-
-  versionSelect.addEventListener(
-    "change",
-    cargarLibros
-  );
-
-  bookSelect.addEventListener(
-    "change",
-    cargarCapitulos
-  );
-
-  chapterSelect.addEventListener(
-    "change",
-    cargarVersiculos
-  );
-
-
-  projectButton.addEventListener(
-    "click",
-    proyectar
-  );
-
-
-  clearButton.addEventListener(
-    "click",
-    limpiar
-  );
-
-
-  projectTextButton.addEventListener(
-    "click",
-    proyectarTexto
-  );
-
-
-  clearTextButton.addEventListener(
-    "click",
-    () => {
-      freeText.innerHTML = "";
-      freeText.focus();
-    }
-  );
-
+  versionSelect.addEventListener("change", cargarLibros);
+  bookSelect.addEventListener("change", cargarCapitulos);
+  chapterSelect.addEventListener("change", cargarVersiculos);
+  projectButton.addEventListener("click", proyectar);
+  clearButton.addEventListener("click", limpiar);
+  projectTextButton.addEventListener("click", proyectarTexto);
+  clearTextButton.addEventListener("click", () => {
+    freeText.innerHTML = "";
+    desactivarModoEdicion();
+    freeText.focus();
+  });
 
   cargarVersiones();
-
   connectWebSocket();
-
 </script>
-
 </body>
 </html>
