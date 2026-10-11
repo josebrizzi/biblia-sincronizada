@@ -22,6 +22,9 @@
   .search-info { display:none; padding:8px 12px; background:#eef4f1; color:#173f35; font-weight:bold; font-size:14px; justify-content:space-between; align-items:center; }
   .search-info button { background:none; border:none; color:#173f35; text-decoration:underline; font-weight:bold; cursor:pointer; }
 
+  /* En modo resaltar: solo se ve el versículo grande */
+  body.resaltando .tabs, body.resaltando main { display:none; }
+
   .preview { padding:10px 12px; display:none; flex-direction:column; gap:8px; }
   .pbox { border-radius:10px; padding:10px 12px; cursor:pointer; }
   .pbox .pref { font-weight:bold; font-size:14px; }
@@ -34,7 +37,6 @@
   .pbox.cur .pref { color:#173f35; font-size:16px; font-family:'Montserrat', Arial, sans-serif; }
   .pbox.cur .ptext { font-size:22px; font-weight:bold; line-height:1.5; max-height:40vh; overflow-y:auto;
                      font-family:'Inter', Arial, sans-serif; }
-  /* Vista previa oscura: imita la proyección con fondo oscuro */
   .pbox.cur.dark { background:#0e1216; color:#f2f2f2; border-color:#4a7d6d; }
   .pbox.cur.dark .pref { color:#7fd4b5; }
   .pbox.cur.resaltando { border-color:#b45309; }
@@ -42,9 +44,7 @@
   .pbox.cur.resaltando .ptext { cursor:pointer; user-select:none; }
   .pbox.hidden { display:none; }
   .ptext .palabra { border-radius:3px; }
-  .ptext .palabra.resaltada { padding:0 1px; }
 
-  /* Paleta de colores de resaltado */
   .colores { display:none; gap:10px; align-items:center; padding:2px 4px; }
   .preview.resaltando .colores { display:flex; }
   .cbtn { width:36px; height:36px; border-radius:50%; border:3px solid #ccc; cursor:pointer; }
@@ -95,7 +95,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v11 · <span id="connectedCount">0</span> conect.</span>
+  <span>v12 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -270,6 +270,7 @@
     editVerseButton.classList.remove("resaltando");
     editVerseButton.textContent = "🖍️ Resaltar";
     preview.classList.remove("resaltando");
+    document.body.classList.remove("resaltando"); // vuelven las pestañas y listas
   }
 
   // ---------- Estimación local de partes (para previews) ----------
@@ -388,6 +389,9 @@
     editVerseButton.textContent = modoResaltar ? "✕ Terminar resaltado" : "🖍️ Resaltar";
     const it = playlist[curIdx];
     if (modoResaltar) {
+      // Oculta pestañas/listas y sube a la vista el versículo grande
+      document.body.classList.add("resaltando");
+      window.scrollTo(0, 0);
       it.words = it.words.map(w => ({ t: w.t, h: "" }));
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -439,7 +443,10 @@
       div.innerHTML = `
         <div class="vnum">${it.verse}</div>
         <div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
-      div.addEventListener("click", () => proyectar(i, 0));
+      div.addEventListener("click", () => {
+        proyectar(i, 0);
+        window.scrollTo(0, 0); // sube para ver el versículo grande proyectarse
+      });
       container.appendChild(div);
     });
   }
@@ -455,7 +462,7 @@
     if (sel) sel.scrollIntoView({ block: "nearest" });
   }
 
-  // ---------- Cuadrícula / lista (botón de 3 puntitos) ----------
+  // ---------- Cuadrícula / lista (3 puntitos) ----------
   function verLista() {
     verseList.style.display = "block";
     verseGrid.style.display = "none";
@@ -540,7 +547,7 @@
       words: String(v.text).replace(/\s+/g," ").trim().split(" ").filter(Boolean).map(t => ({ t: t, h: "" }))
     }));
     partesInfo = null;
-    verGrilla(); // cada capítulo arranca en cuadrícula
+    verGrilla();
 
     const maxV = Math.max(...verses.map(v => v.verse));
     verseGrid.innerHTML = "";
@@ -552,7 +559,7 @@
       cellv.addEventListener("click", () => {
         const idx = playlist.findIndex(it => it.verse === n);
         if (idx < 0) return;
-        proyectar(idx, 0); // NO cambia de vista: sigue en la cuadrícula
+        proyectar(idx, 0);
       });
       verseGrid.appendChild(cellv);
     }
