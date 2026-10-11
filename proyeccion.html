@@ -20,7 +20,6 @@
       justify-content: center;
       transition: background 0.3s, color 0.3s;
     }
-    /* ===== FONDOS ===== */
     body.f-claro        { background: #ffffff; color: #111; }
     body.f-doodle-claro { background: #f7f3ea; color: #222; }
     body.f-sepia        { background: #f6eedd; color: #3b2f1e; }
@@ -34,7 +33,8 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 5vh 7vw;
+      align-items: center;
+      padding: 4vh 6vw;
       position: relative;
     }
     .reference {
@@ -42,24 +42,23 @@
       font-weight: 900;
       width: 100%;
       text-align: center;
-      font-size: clamp(30px, 4.2vw, 54px);
-      margin-bottom: 4vh;
+      font-size: clamp(34px, 4.6vw, 62px);
+      margin-bottom: 3vh;
       color: #173f35;
     }
     body.f-sepia .reference { color: #8a5a2a; }
     body.f-oscuro .reference, body.f-doodle-oscuro .reference { color: #7fd4b5; }
     body.f-azul .reference { color: #bcd7ff; }
 
-    /* Roboto Bold +2 puntos */
+    /* Roboto Bold: letra grande y CENTRADA */
     .text {
       width: 100%;
-      max-height: 76vh;
+      max-height: 78vh;
       overflow-y: auto;
-      padding: 0 2vw;
-      font-size: clamp(38px, 5.3vw, 80px);
+      font-size: clamp(42px, 6.4vw, 100px);
       font-weight: 700;
-      line-height: 1.45;
-      text-align: left;
+      line-height: 1.38;
+      text-align: center;
       color: inherit;
       scrollbar-width: thin;
     }
@@ -68,8 +67,10 @@
     .version {
       width: 100%;
       text-align: center;
-      margin-top: 4vh;
-      font-size: clamp(18px, 2vw, 26px);
+      margin-top: 3vh;
+      font-size: clamp(18px, 2vw, 28px);
+      font-weight: 700;
+      letter-spacing: 1px;
       color: #666;
     }
     body.f-sepia .version { color: #8a7a5a; }
@@ -100,7 +101,6 @@
 
     mark { color: #111; border-radius: 3px; }
 
-    /* ===== AVISO INICIAL DE PANTALLA COMPLETA ===== */
     #startOverlay {
       position: fixed; inset: 0; z-index: 50;
       background: rgba(5,10,8,0.88);
@@ -116,12 +116,6 @@
     }
     #startBtn:active { transform: scale(0.97); }
     .ov-note { margin-top: 18px; font-size: 15px; color: #b9c6c0; line-height: 1.5; }
-
-    @media (max-width: 600px) {
-      .proyeccion { padding: 4vh 5vw; }
-      .reference { margin-bottom: 3vh; }
-      .text { padding: 0 1vw; }
-    }
   </style>
 </head>
 <body class="f-claro">
@@ -159,11 +153,46 @@
     let totalPartes = 1;
     let parteActual = 0;
 
-    const MAX_LINEAS = 4; // máximo de renglones por parte (cámbialo acá si querés)
+    const MAX_LINEAS = 4;
 
-    // ---------- FONDOS (dibujitos vectoriales, no hacen falta imágenes) ----------
+    // ---------- ABREVIATURAS ----------
+    function normalizar(s) {
+      return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    }
+    const LIBRO_ABBR = {
+      "genesis":"Gn","exodo":"Ex","levitico":"Lv","numeros":"Nm","deuteronomio":"Dt",
+      "josue":"Js","jueces":"Jz","rut":"Rt","1 samuel":"1S","2 samuel":"2S",
+      "1 reyes":"1R","2 reyes":"2R","1 cronicas":"1Cr","2 cronicas":"2Cr",
+      "esdras":"Esd","nehemias":"Neh","ester":"Est","job":"Job","salmos":"Sal","salmo":"Sal",
+      "proverbios":"Pr","eclesiastes":"Ec","cantares":"Ct","cantar de los cantares":"Ct",
+      "isaias":"Is","jeremias":"Jr","lamentaciones":"Lm","ezequiel":"Ez","daniel":"Dn",
+      "oseas":"Os","joel":"Jl","amos":"Am","obadias":"Ob","jonas":"Jon","miqueas":"Mi",
+      "nahum":"Nah","habacuc":"Hab","sofonias":"Sof","hageo":"Hag","zacarias":"Zac","malaquias":"Mal",
+      "mateo":"Mt","marcos":"Mr","lucas":"Lc","juan":"Jn","hechos":"Hch","romanos":"Ro",
+      "1 corintios":"1Co","2 corintios":"2Co","galatas":"Ga","efesios":"Ef","filipenses":"Fil",
+      "colosenses":"Col","1 tesalonicenses":"1Ts","2 tesalonicenses":"2Ts",
+      "1 timoteo":"1Ti","2 timoteo":"2Ti","tito":"Tit","filemon":"Flm","hebreos":"Heb",
+      "santiago":"Stg","1 pedro":"1P","2 pedro":"2P","1 juan":"1Jn","2 juan":"2Jn","3 juan":"3Jn",
+      "judas":"Jud","apocalipsis":"Ap"
+    };
+    function abreviarLibro(nombre) {
+      return LIBRO_ABBR[normalizar(nombre)] || nombre;
+    }
+    const VERSION_ABBR = {
+      "reina-valera 1960": "RV60",
+      "reina valera 1960": "RV60",
+      "nueva traduccion viviente": "NTV",
+      "dios habla hoy": "DHH",
+      "traduccion en lenguaje actual": "TLA"
+    };
+    function abreviarVersion(v) {
+      const key = normalizar(v);
+      if (VERSION_ABBR[key]) return VERSION_ABBR[key];
+      return v.split(/\s+/).map(p => p[0] || "").join("").toUpperCase().slice(0, 5);
+    }
+
+    // ---------- FONDOS ----------
     const FONDOS = ["claro", "doodle-claro", "sepia", "oscuro", "doodle-oscuro", "azul"];
-
     function doodleSVG(color, op) {
       const s =
         "<g fill='none' stroke='" + color + "' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' opacity='" + op + "'>" +
@@ -176,7 +205,6 @@
         "</g>";
       return "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'>" + s + "</svg>";
     }
-
     function aplicarFondo(id) {
       const f = FONDOS.includes(id) ? id : "claro";
       document.body.className = "f-" + f;
@@ -197,7 +225,6 @@
       document.documentElement.requestFullscreen().catch(() => {});
     }
     function ocultarOverlay() { startOverlay.classList.add("hidden"); }
-
     startBtn.addEventListener("click", () => { pedirPantallaCompleta(); ocultarOverlay(); });
     fullscreenButton.addEventListener("click", pedirPantallaCompleta);
 
@@ -224,7 +251,6 @@
       return html;
     }
 
-    // ---------- MEDICIÓN: entra y tiene como máximo MAX_LINEAS líneas ----------
     function mideOK(words, r) {
       text.innerHTML = palabrasAHtml(words, r[0], r[1]);
       const lh = parseFloat(getComputedStyle(text).lineHeight) || 10;
@@ -273,8 +299,8 @@
 
     function mostrarVerse(data) {
       ultimoData = data;
-      reference.textContent = `${data.bookName} ${data.chapter}:${data.verse}`;
-      version.textContent = data.version || "";
+      reference.textContent = `${abreviarLibro(data.bookName)} ${data.chapter}:${data.verse}`;
+      version.textContent = abreviarVersion(data.version || "");
       text.className = "text";
 
       divisiones = medirYDividir(data.words || []);
@@ -302,7 +328,6 @@
     function mostrarProyeccion(data) {
       if (!data) return;
       if (data.type === "verse") {
-        // Primer versículo de la sesión: cerramos el aviso e intentamos fullscreen
         if (!startOverlay.classList.contains("hidden")) {
           ocultarOverlay();
           pedirPantallaCompleta();
@@ -358,7 +383,7 @@
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${location.host}`);
       ws.addEventListener("open", () => {
-        status.textContent = "Conectado · v14";
+        status.textContent = "Conectado · v15";
         status.classList.add("connected");
       });
       ws.addEventListener("close", () => {
