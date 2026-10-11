@@ -73,6 +73,33 @@ app.get("/api/verses", (req, res) => {
   );
 });
 
+// ---- NUEVO: buscador por palabra o frase ----
+app.get("/api/search", (req, res) => {
+  const q = String(req.query.q || "").trim();
+  const version = String(req.query.version || "");
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+
+  if (!q) return res.status(400).json({ error: "Falta el parámetro q" });
+  if (!version) return res.status(400).json({ error: "Falta la versión." });
+
+  // Escapa los caracteres especiales de LIKE para que no rompan la búsqueda
+  const seguro = q.replace(/[\\%_]/g, (m) => "\\" + m);
+  const like = "%" + seguro + "%";
+
+  db.all(
+    `SELECT book_number, book_name, chapter, verse, text
+     FROM verses
+     WHERE version = ? AND text LIKE ? ESCAPE '\\'
+     ORDER BY book_number, chapter, verse
+     LIMIT ?`,
+    [version, like, limit],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
 // ---- WebSocket: reenvía lo proyectado a todas las pantallas ----
 function broadcastCount() {
   let n = 0;
