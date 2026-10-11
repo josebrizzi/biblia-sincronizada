@@ -6,12 +6,12 @@
   <title>Proyección - Biblia Sincronizada</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+      font-family: 'Roboto', Arial, sans-serif;
       background: #ffffff;
       color: #111;
       overflow: hidden;
@@ -20,7 +20,14 @@
       justify-content: center;
       transition: background 0.3s, color 0.3s;
     }
-    body.dark { background: #0e1216; color: #f2f2f2; }
+    /* ===== FONDOS ===== */
+    body.f-claro        { background: #ffffff; color: #111; }
+    body.f-doodle-claro { background: #f7f3ea; color: #222; }
+    body.f-sepia        { background: #f6eedd; color: #3b2f1e; }
+    body.f-oscuro       { background: #0e1216; color: #f2f2f2; }
+    body.f-doodle-oscuro{ background: #12161b; color: #f2f2f2; }
+    body.f-azul         { background: linear-gradient(160deg, #0b1e3a, #12335f); color: #eef3fb; }
+
     .proyeccion {
       width: 100vw;
       height: 100vh;
@@ -31,7 +38,7 @@
       position: relative;
     }
     .reference {
-      font-family: 'Montserrat', 'Inter', sans-serif;
+      font-family: 'Montserrat', 'Roboto', sans-serif;
       font-weight: 900;
       width: 100%;
       text-align: center;
@@ -39,20 +46,23 @@
       margin-bottom: 4vh;
       color: #173f35;
     }
-    body.dark .reference { color: #7fd4b5; }
+    body.f-sepia .reference { color: #8a5a2a; }
+    body.f-oscuro .reference, body.f-doodle-oscuro .reference { color: #7fd4b5; }
+    body.f-azul .reference { color: #bcd7ff; }
+
+    /* Roboto Bold +2 puntos */
     .text {
       width: 100%;
       max-height: 76vh;
       overflow-y: auto;
       padding: 0 2vw;
-      font-size: clamp(36px, 5vw, 74px);
+      font-size: clamp(38px, 5.3vw, 80px);
       font-weight: 700;
-      line-height: 1.5;
+      line-height: 1.45;
       text-align: left;
-      color: #111;
+      color: inherit;
       scrollbar-width: thin;
     }
-    body.dark .text { color: #f2f2f2; }
     .text::-webkit-scrollbar { width: 8px; }
     .text::-webkit-scrollbar-thumb { background: #bbb; border-radius: 8px; }
     .version {
@@ -62,9 +72,11 @@
       font-size: clamp(18px, 2vw, 26px);
       color: #666;
     }
-    body.dark .version { color: #9aa5a0; }
+    body.f-sepia .version { color: #8a7a5a; }
+    body.f-oscuro .version, body.f-doodle-oscuro .version { color: #9aa5a0; }
+    body.f-azul .version { color: #9db8dd; }
     .waiting { text-align: center; color: #777; }
-    body.dark .waiting { color: #777; }
+
     .fullscreen-button {
       position: fixed; right: 18px; bottom: 18px;
       width: 44px; height: 44px; border: none; border-radius: 50%;
@@ -72,7 +84,6 @@
       font-size: 20px; opacity: 0.4; transition: opacity 0.2s;
     }
     .fullscreen-button:hover { opacity: 1; }
-    body.dark .fullscreen-button { color: #ccc; }
     #partBadge {
       position: fixed; right: 74px; bottom: 18px;
       padding: 9px 16px; border-radius: 22px;
@@ -86,8 +97,26 @@
       background: #ddd; color: #555; font-size: 12px; opacity: 0.45;
     }
     .status.connected { background: #dcece5; color: #173f35; }
-    body.dark .status.connected { background: #1d2a26; color: #7fd4b5; }
+
     mark { color: #111; border-radius: 3px; }
+
+    /* ===== AVISO INICIAL DE PANTALLA COMPLETA ===== */
+    #startOverlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(5,10,8,0.88);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #startOverlay.hidden { display: none; }
+    .ov-card { text-align: center; color: #fff; padding: 20px; }
+    .ov-title { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 34px; margin-bottom: 26px; }
+    #startBtn {
+      border: none; border-radius: 14px; padding: 22px 40px;
+      background: #173f35; color: #fff; font-size: 26px; font-weight: bold;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    #startBtn:active { transform: scale(0.97); }
+    .ov-note { margin-top: 18px; font-size: 15px; color: #b9c6c0; line-height: 1.5; }
+
     @media (max-width: 600px) {
       .proyeccion { padding: 4vh 5vw; }
       .reference { margin-bottom: 3vh; }
@@ -95,7 +124,7 @@
     }
   </style>
 </head>
-<body>
+<body class="f-claro">
   <main id="main" class="proyeccion">
     <div id="reference" class="reference">Biblia Sincronizada</div>
     <div id="text" class="text waiting">Esperando que el predicador proyecte un versículo...</div>
@@ -104,6 +133,15 @@
   <button id="fullscreenButton" class="fullscreen-button" title="Pantalla completa">⛶</button>
   <div id="partBadge">Parte 1 ▶</div>
   <div id="status" class="status">Conectando...</div>
+
+  <div id="startOverlay">
+    <div class="ov-card">
+      <div class="ov-title">📖 BIBLIA SINCRONIZADA</div>
+      <button id="startBtn">⛶ PANTALLA COMPLETA</button>
+      <div class="ov-note">Tocá una vez para activar la vista completa.<br>Después se mantiene sola en cada proyección.</div>
+    </div>
+  </div>
+
   <script>
     const reference = document.getElementById("reference");
     const text = document.getElementById("text");
@@ -112,6 +150,8 @@
     const fullscreenButton = document.getElementById("fullscreenButton");
     const partBadge = document.getElementById("partBadge");
     const main = document.getElementById("main");
+    const startOverlay = document.getElementById("startOverlay");
+    const startBtn = document.getElementById("startBtn");
 
     let ws;
     let ultimoData = null;
@@ -119,12 +159,47 @@
     let totalPartes = 1;
     let parteActual = 0;
 
-    // ---- TEMA: fondo claro/oscuro (lo elige el panel y queda guardado) ----
-    function aplicarTema(dark) {
-      document.body.classList.toggle("dark", !!dark);
-      try { localStorage.setItem("proyTema", dark ? "oscuro" : "claro"); } catch (e) {}
+    const MAX_LINEAS = 4; // máximo de renglones por parte (cámbialo acá si querés)
+
+    // ---------- FONDOS (dibujitos vectoriales, no hacen falta imágenes) ----------
+    const FONDOS = ["claro", "doodle-claro", "sepia", "oscuro", "doodle-oscuro", "azul"];
+
+    function doodleSVG(color, op) {
+      const s =
+        "<g fill='none' stroke='" + color + "' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' opacity='" + op + "'>" +
+        "<path d='M60 28 v52 M34 54 h52'/>" +
+        "<path d='M150 62 q26 -24 52 0 q-26 24 -52 0 z M202 62 l16 -13 M202 62 l16 13'/>" +
+        "<path d='M64 152 q22 -30 48 -8 q-22 28 -48 8 z'/>" +
+        "<circle cx='162' cy='152' r='9'/><path d='M171 152 v-40 q18 4 24 18'/>" +
+        "<path d='M44 96 l7 15 16 2 -12 11 3 16 -14 -8 -14 8 3 -16 -12 -11 16 -2 z'/>" +
+        "<path d='M118 208 q22 -13 44 0 M118 208 q22 13 44 0 M140 208 v-15'/>" +
+        "</g>";
+      return "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'>" + s + "</svg>";
     }
-    try { aplicarTema(localStorage.getItem("proyTema") === "oscuro"); } catch (e) {}
+
+    function aplicarFondo(id) {
+      const f = FONDOS.includes(id) ? id : "claro";
+      document.body.className = "f-" + f;
+      if (f === "doodle-claro") {
+        document.body.style.backgroundImage = "url(\"data:image/svg+xml;utf8," + encodeURIComponent(doodleSVG("#6b5d4a", 0.10)) + "\")";
+      } else if (f === "doodle-oscuro") {
+        document.body.style.backgroundImage = "url(\"data:image/svg+xml;utf8," + encodeURIComponent(doodleSVG("#ffffff", 0.05)) + "\")";
+      } else {
+        document.body.style.backgroundImage = "";
+      }
+      try { localStorage.setItem("proyFondo", f); } catch (e) {}
+    }
+    try { aplicarFondo(localStorage.getItem("proyFondo") || "claro"); } catch (e) {}
+
+    // ---------- PANTALLA COMPLETA ----------
+    function pedirPantallaCompleta() {
+      if (document.fullscreenElement) return;
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+    function ocultarOverlay() { startOverlay.classList.add("hidden"); }
+
+    startBtn.addEventListener("click", () => { pedirPantallaCompleta(); ocultarOverlay(); });
+    fullscreenButton.addEventListener("click", pedirPantallaCompleta);
 
     function escapeHtml(s) {
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -149,10 +224,12 @@
       return html;
     }
 
-    // --- Corte automático real: divide en N partes midiendo la pantalla ---
-    function parteEntra(words, r) {
+    // ---------- MEDICIÓN: entra y tiene como máximo MAX_LINEAS líneas ----------
+    function mideOK(words, r) {
       text.innerHTML = palabrasAHtml(words, r[0], r[1]);
-      return text.scrollHeight <= text.clientHeight + 2;
+      const lh = parseFloat(getComputedStyle(text).lineHeight) || 10;
+      const lineas = Math.round(text.scrollHeight / lh);
+      return lineas <= MAX_LINEAS && text.scrollHeight <= text.clientHeight + 2;
     }
 
     function cortarEnN(words, N) {
@@ -184,12 +261,11 @@
 
     function medirYDividir(words) {
       text.className = "text";
-      if (parteEntra(words, [0, words.length])) return [[0, words.length]];
+      if (mideOK(words, [0, words.length])) return [[0, words.length]];
       let ultimo = null;
       for (let N = 2; N <= 8; N++) {
         const rangos = cortarEnN(words, N);
-        const ok = rangos.every(r => parteEntra(words, r));
-        if (ok) return rangos;
+        if (rangos.every(r => mideOK(words, r))) return rangos;
         ultimo = rangos;
       }
       return ultimo;
@@ -225,9 +301,16 @@
 
     function mostrarProyeccion(data) {
       if (!data) return;
-      if (data.type === "verse") mostrarVerse(data);
+      if (data.type === "verse") {
+        // Primer versículo de la sesión: cerramos el aviso e intentamos fullscreen
+        if (!startOverlay.classList.contains("hidden")) {
+          ocultarOverlay();
+          pedirPantallaCompleta();
+        }
+        mostrarVerse(data);
+      }
       else if (data.type === "freeText") mostrarFree(data);
-      else if (data.type === "theme") aplicarTema(data.dark);
+      else if (data.type === "theme") aplicarFondo(data.fondo);
     }
 
     function irAParte(n) {
@@ -275,7 +358,7 @@
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${location.host}`);
       ws.addEventListener("open", () => {
-        status.textContent = "Conectado · v11";
+        status.textContent = "Conectado · v14";
         status.classList.add("connected");
       });
       ws.addEventListener("close", () => {
@@ -292,14 +375,6 @@
       });
     }
 
-    async function pantallaCompleta() {
-      try {
-        if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
-        else await document.exitFullscreen();
-      } catch (error) { console.error(error); }
-    }
-
-    fullscreenButton.addEventListener("click", pantallaCompleta);
     conectar();
   </script>
 </body>
