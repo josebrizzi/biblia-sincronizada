@@ -37,7 +37,6 @@
       margin-bottom: 4vh;
       color: #173f35;
     }
-    /* Tamaño de letra FIJO: nunca se achica */
     .text {
       width: 100%;
       max-height: 76vh;
@@ -95,7 +94,7 @@
     <div id="version" class="version"></div>
   </main>
   <button id="fullscreenButton" class="fullscreen-button" title="Pantalla completa">⛶</button>
-  <div id="partBadge">Parte 1 de 2 ▶</div>
+  <div id="partBadge">Parte 1 ▶</div>
   <div id="status" class="status">Conectando...</div>
   <script>
     const reference = document.getElementById("reference");
@@ -107,22 +106,17 @@
     const main = document.getElementById("main");
 
     let ws;
-    let ultimoData = null;   // último versículo recibido
-    let ultimoRef = "";      // referencia del último versículo
-    let divisiones = [];     // cómo quedó cortado el versículo
+    let ultimoData = null;
+    let divisiones = [];
     let totalPartes = 1;
     let parteActual = 0;
 
     function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     }
 
-    // Une las palabras en HTML; las resaltadas consecutivas van en un solo <mark>
     function palabrasAHtml(palabras, desde, hasta) {
-      let html = "";
-      let enMark = false;
+      let html = "", enMark = false;
       for (let i = desde; i < hasta; i++) {
         const w = palabras[i];
         if (w.h && !enMark) { html += "<mark>"; enMark = true; }
@@ -134,41 +128,64 @@
       return html;
     }
 
-    // Muestra el versículo completo; si no entra, lo corta en 2 por la mitad
-    function medirYDividir(palabras) {
+    // --- Corte automático real: divide en N partes midiendo la pantalla ---
+    function parteEntra(words, r) {
+      text.innerHTML = palabrasAHtml(words, r[0], r[1]);
+      return text.scrollHeight <= text.clientHeight + 2;
+    }
+
+    function cortarEnN(words, N) {
+      const total = words.reduce((a, w) => a + w.t.length + 1, 0);
+      const objetivo = total / N;
+      const cortes = [];
+      let acc = 0, nextCut = 1;
+      for (let i = 0; i < words.length && cortes.length < N - 1; i++) {
+        acc += words[i].t.length + 1;
+        if (acc >= objetivo && i < words.length - 1) {
+          let mejor = i;
+          const ventana = Math.max(2, Math.floor(words.length * 0.05));
+          for (let d = 0; d <= ventana; d++) {
+            const izq = i - d, der = i + d;
+            if (izq > nextCut && izq < words.length - 1 && /[.,;:?!]$/.test(words[izq-1].t)) { mejor = izq; break; }
+            if (der < words.length - 1 && der > nextCut && /[.,;:?!]$/.test(words[der-1].t)) { mejor = der; break; }
+          }
+          cortes.push(mejor);
+          nextCut = mejor + 1;
+          acc = 0;
+        }
+      }
+      const rangos = [];
+      let desde = 0;
+      cortes.forEach(c => { rangos.push([desde, c]); desde = c; });
+      rangos.push([desde, words.length]);
+      return rangos;
+    }
+
+    function medirYDividir(words) {
       text.className = "text";
-      text.innerHTML = palabrasAHtml(palabras, 0, palabras.length);
-      if (text.scrollHeight <= text.clientHeight + 2) {
-        return [{ from: 0, to: palabras.length }];
+      if (parteEntra(words, [0, words.length])) return [[0, words.length]];
+      let ultimo = null;
+      for (let N = 2; N <= 8; N++) {
+        const rangos = cortarEnN(words, N);
+        const ok = rangos.every(r => parteEntra(words, r));
+        if (ok) return rangos;
+        ultimo = rangos;
       }
-      const total = palabras.reduce((a, w) => a + w.t.length + 1, 0);
-      let acc = 0, corte = Math.floor(palabras.length / 2);
-      for (let i = 0; i < palabras.length; i++) {
-        acc += palabras[i].t.length + 1;
-        if (acc >= total / 2) { corte = i; break; }
-      }
-      corte = Math.max(1, Math.min(corte, palabras.length - 1));
-      return [{ from: 0, to: corte }, { from: corte, to: palabras.length }];
+      return ultimo; // texto gigante: quedará con scroll mínimo
     }
 
     function mostrarVerse(data) {
       ultimoData = data;
-      const ref = `${data.bookName} ${data.chapter}:${data.verse}`;
-      const mismaRef = (ref === ultimoRef);
-      ultimoRef = ref;
-      reference.textContent = ref;
+      reference.textContent = `${data.bookName} ${data.chapter}:${data.verse}`;
       version.textContent = data.version || "";
+      text.className = "text";
 
       divisiones = medirYDividir(data.words || []);
       totalPartes = divisiones.length;
-      if (totalPartes === 1) {
-        parteActual = 0;
-      } else if (!(mismaRef && parteActual > 0 && parteActual < totalPartes)) {
-        parteActual = 0;
-      }
-      if (totalPartes > 1) {
-        text.innerHTML = palabrasAHtml(data.words, divisiones[parteActual].from, divisiones[parteActual].to);
-      }
+      parteActual = Math.min(Math.max(0, data.part || 0), totalPartes - 1);
+
+      const r = divisiones[parteActual];
+      text.innerHTML = palabrasAHtml(data.words, r[0], r[1]);
       text.scrollTop = 0;
       actualizarBadge();
       avisarPartes();
@@ -176,85 +193,67 @@
 
     function mostrarFree(data) {
       ultimoData = null;
-      ultimoRef = "";
-      totalPartes = 1;
-      parteActual = 0;
+      totalPartes = 1; parteActual = 0;
       reference.textContent = "Cita";
       text.className = "text";
       text.innerHTML = data.html || "";
       version.textContent = "";
       text.scrollTop = 0;
       actualizarBadge();
-      avisarPartes();
     }
 
     function mostrarProyeccion(data) {
       if (!data) return;
       if (data.type === "verse") mostrarVerse(data);
       else if (data.type === "freeText") mostrarFree(data);
-      else if (data.type === "goto-part") irAParte((data.part || 1) - 1);
-      // "parts-info" (eco propio) se ignora
     }
 
     function irAParte(n) {
-      if (!ultimoData || !ultimoData.words) return;
-      if (n < 0 || n >= totalPartes) return;
+      if (!ultimoData || n < 0 || n >= totalPartes) return;
       parteActual = n;
-      text.innerHTML = palabrasAHtml(ultimoData.words, divisiones[n].from, divisiones[n].to);
+      const r = divisiones[n];
+      text.innerHTML = palabrasAHtml(ultimoData.words, r[0], r[1]);
       text.scrollTop = 0;
       actualizarBadge();
       avisarPartes();
     }
-
-    function siguiente() { irAParte(parteActual + 1); }
-    function anterior() { irAParte(parteActual - 1); }
 
     function actualizarBadge() {
       if (totalPartes > 1) {
         partBadge.style.display = "block";
         partBadge.textContent = "Parte " + (parteActual + 1) + " de " + totalPartes +
           (parteActual + 1 < totalPartes ? "  ▶" : "");
-      } else {
-        partBadge.style.display = "none";
-      }
+      } else partBadge.style.display = "none";
     }
 
-    // Avisa al celular cuántas partes hay y en cuál está
     function avisarPartes() {
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      if (!ws || ws.readyState !== WebSocket.OPEN || !ultimoData) return;
       ws.send(JSON.stringify({
         type: "project",
         reference: "",
-        data: { type: "parts-info", count: totalPartes, current: parteActual + 1 }
+        data: {
+          type: "parts-info",
+          count: totalPartes,
+          current: parteActual + 1,
+          ranges: divisiones,
+          verse: ultimoData.verse,
+          chapter: ultimoData.chapter
+        }
       }));
     }
 
-    // Controles en la PC: clic en la pantalla, flechas o barra espaciadora
-    main.addEventListener("click", siguiente);
-    partBadge.addEventListener("click", siguiente);
+    main.addEventListener("click", () => irAParte((parteActual + 1) % totalPartes));
+    partBadge.addEventListener("click", (e) => { e.stopPropagation(); irAParte((parteActual + 1) % totalPartes); });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); siguiente(); }
-      else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); anterior(); }
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); irAParte((parteActual + 1) % totalPartes); }
+      else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); irAParte((parteActual - 1 + totalPartes) % totalPartes); }
     });
-
-    // Si cambia el tamaño de la ventana o entra a pantalla completa, se vuelve a medir
-    let resizeTimer;
-    window.addEventListener("resize", () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { if (ultimoData) mostrarVerse(ultimoData); }, 200);
-    });
-    document.addEventListener("fullscreenchange", () => {
-      setTimeout(() => { if (ultimoData) mostrarVerse(ultimoData); }, 200);
-    });
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => { if (ultimoData) mostrarVerse(ultimoData); });
-    }
 
     function conectar() {
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${location.host}`);
       ws.addEventListener("open", () => {
-        status.textContent = "Conectado";
+        status.textContent = "Conectado · v9";
         status.classList.add("connected");
       });
       ws.addEventListener("close", () => {
@@ -262,10 +261,7 @@
         status.classList.remove("connected");
         setTimeout(conectar, 2000);
       });
-      ws.addEventListener("error", () => {
-        status.textContent = "Error de conexión";
-        status.classList.remove("connected");
-      });
+      ws.addEventListener("error", () => { status.textContent = "Error de conexión"; status.classList.remove("connected"); });
       ws.addEventListener("message", (event) => {
         try {
           const message = JSON.parse(event.data);
@@ -276,11 +272,8 @@
 
     async function pantallaCompleta() {
       try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        } else {
-          await document.exitFullscreen();
-        }
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+        else await document.exitFullscreen();
       } catch (error) { console.error(error); }
     }
 
