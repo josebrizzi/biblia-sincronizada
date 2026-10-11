@@ -3,22 +3,521 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Biblia Sincronizada</title>
+<title>Biblia Sincronizada — Predicador</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #f4f1ea; margin: 0;
-         min-height: 100vh; display: flex; flex-direction: column;
-         align-items: center; justify-content: center; gap: 20px; }
-  h1 { color: #173f35; }
-  a { display: block; width: 280px; text-align: center; padding: 20px;
-      border-radius: 12px; text-decoration: none; font-size: 20px;
-      font-weight: bold; }
-  .control { background: #173f35; color: white; }
-  .pantalla { background: white; color: #173f35; border: 2px solid #173f35; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; font-family: Arial, sans-serif; background: #f4f1ea; color: #222; }
+  header { background: #173f35; color: white; padding: 18px 24px; }
+  header h1 { margin: 0; font-size: 26px; }
+  header p { margin: 5px 0 0; opacity: 0.85; }
+  main { max-width: 1100px; margin: 25px auto; padding: 0 18px; }
+  .panel { background: white; border-radius: 14px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+  label { display: block; font-weight: bold; margin-bottom: 6px; }
+  select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; background: white; }
+  .search-row { display: flex; gap: 10px; margin-top: 18px; }
+  #searchInput {
+    flex: 1; padding: 13px 15px; border: 2px solid #ccc; border-radius: 10px;
+    font-size: 18px; background: white; outline: none;
+  }
+  #searchInput:focus { border-color: #173f35; }
+  #searchButton {
+    border: none; border-radius: 10px; padding: 0 22px;
+    background: #173f35; color: white; font-size: 22px; cursor: pointer;
+  }
+  .search-info {
+    display: none; margin-top: 10px; padding: 10px 12px;
+    border-radius: 8px; background: #eef4f1; color: #173f35;
+    font-weight: bold; font-size: 15px;
+    justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .search-info button {
+    background: none; border: none; color: #173f35; font-size: 14px;
+    font-weight: bold; text-decoration: underline; cursor: pointer; padding: 4px 8px;
+  }
+  .reference { margin-top: 18px; font-size: 21px; font-weight: bold; }
+  .verses { margin-top: 20px; max-height: 430px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; }
+  .verse { display: flex; gap: 12px; padding: 13px; border-bottom: 1px solid #eee; cursor: pointer; }
+  .verse:last-child { border-bottom: none; }
+  .verse:hover { background: #f4f7f5; }
+  .verse.selected { background: #dcece5; outline: 2px solid #173f35; }
+  .verse-number { min-width: 34px; font-weight: bold; color: #173f35; font-size: 19px; }
+  /* Letra del celular: subida de 16px a 19px (+2 puntos) */
+  .verse-text { line-height: 1.55; font-size: 19px; }
+  .verse-text mark, .search-ref mark { background: #ffe27a; padding: 0 2px; border-radius: 3px; }
+  .search-ref { font-size: 15px; font-weight: bold; color: #173f35; margin-bottom: 4px; }
+  .actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  button { border: none; border-radius: 9px; padding: 14px 22px; font-size: 17px; font-weight: bold; cursor: pointer; }
+  #editVerseButton { background: #b45309; color: white; flex: 1; }
+  #editVerseButton:disabled { background: #ccc; cursor: not-allowed; }
+  #partButton { background: #173f35; color: white; display: none; }
+  #clearButton { background: #ddd; color: #222; }
+  .free-text-panel { margin-top: 20px; padding: 18px; border: 1px solid #ddd; border-radius: 12px; background: #fafafa; display: none; }
+  .free-text-panel.visible { display: block; }
+  .free-text-panel > label { display: block; margin-bottom: 8px; font-weight: bold; color: #b45309; }
+  .quote-editor {
+    width: 100%; min-height: 140px; max-height: 340px; overflow-y: auto;
+    box-sizing: border-box; padding: 14px; border: 1px solid #ccc; border-radius: 9px;
+    background: white; font-family: Arial, sans-serif;
+    font-size: 19px; line-height: 1.9; outline: none; user-select: none;
+  }
+  .palabra { cursor: pointer; border-radius: 3px; }
+  .palabra.resaltada { background-color: #ffff00; }
+  .modo-edicion {
+    margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+    background: #fff7e0; border: 1px solid #e6c96a; color: #7a5c00;
+    font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .modo-edicion button { background: none; color: #7a5c00; padding: 6px 10px; font-size: 14px; text-decoration: underline; }
+  .status { margin-top: 15px; padding: 10px; border-radius: 8px; background: #f1f1f1; }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 22px; }
+  }
 </style>
 </head>
 <body>
+<header>
   <h1>📖 Biblia Sincronizada</h1>
-  <a class="control" href="/admin.html">📱 Control (predicador)</a>
-  <a class="pantalla" href="/proyeccion.html">📺 Pantalla (proyección)</a>
+  <p>Panel del predicador · v7</p>
+</header>
+<main>
+  <section class="panel">
+    <div class="grid">
+      <div>
+        <label for="version">Versión</label>
+        <select id="version"><option value="">Cargando...</option></select>
+      </div>
+      <div>
+        <label for="book">Libro</label>
+        <select id="book" disabled><option value="">Seleccione una versión</option></select>
+      </div>
+      <div>
+        <label for="chapter">Capítulo</label>
+        <select id="chapter" disabled><option value="">Seleccione un libro</option></select>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <input id="searchInput" type="search" placeholder="🔍 Buscar palabra o frase en la Biblia..." autocomplete="off">
+      <button id="searchButton" title="Buscar">🔍</button>
+    </div>
+    <div class="search-info" id="searchInfo">
+      <span id="searchInfoTexto"></span>
+      <button id="clearSearchButton">✕ Volver al capítulo</button>
+    </div>
+
+    <div class="reference" id="reference">Seleccione una referencia</div>
+
+    <div class="verses" id="verses">
+      <div style="padding:20px; color:#777;">Seleccione versión, libro y capítulo, o use el buscador.</div>
+    </div>
+
+    <div class="actions">
+      <button id="editVerseButton" disabled>🖍️ Resaltar palabras</button>
+      <button id="partButton">▶️ Parte 2</button>
+      <button id="clearButton">Limpiar</button>
+    </div>
+
+    <div class="free-text-panel" id="panelResaltar">
+      <label>🖍️ TOCÁ LAS PALABRAS QUE QUERÉS RESALTAR — se proyectan al instante</label>
+      <div id="freeText" class="quote-editor"></div>
+      <div class="modo-edicion">
+        <span id="modoTexto"></span>
+        <button type="button" id="salirEdicion">✕ Terminar y volver al versículo limpio</button>
+      </div>
+    </div>
+
+    <div class="status">
+      Estado WebSocket: <span id="wsStatus">Conectando...</span>
+      | Conectados: <span id="connectedCount">0</span>
+    </div>
+  </section>
+</main>
+
+<script>
+  const versionSelect = document.getElementById("version");
+  const bookSelect = document.getElementById("book");
+  const chapterSelect = document.getElementById("chapter");
+  const versesContainer = document.getElementById("verses");
+  const referenceElement = document.getElementById("reference");
+  const clearButton = document.getElementById("clearButton");
+  const editVerseButton = document.getElementById("editVerseButton");
+  const partButton = document.getElementById("partButton");
+  const freeText = document.getElementById("freeText");
+  const panelResaltar = document.getElementById("panelResaltar");
+  const modoTexto = document.getElementById("modoTexto");
+  const salirEdicion = document.getElementById("salirEdicion");
+  const wsStatus = document.getElementById("wsStatus");
+  const connectedCount = document.getElementById("connectedCount");
+  const searchInput = document.getElementById("searchInput");
+  const searchButton = document.getElementById("searchButton");
+  const searchInfo = document.getElementById("searchInfo");
+  const searchInfoTexto = document.getElementById("searchInfoTexto");
+  const clearSearchButton = document.getElementById("clearSearchButton");
+
+  let ws = null;
+  let currentVerses = [];
+  let selectedBookName = "";
+  let versiculoActual = null;   // versículo elegido (del capítulo O de la búsqueda)
+  let versiculoEnEdicion = null;
+  let parteActual = 0;
+  let partesActuales = 1;
+  let enModoBusqueda = false;
+
+  // Si el versículo supera esta cantidad de caracteres, se corta en 2 partes
+  const UMBRAL_PARTES = 240;
+
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function connectWebSocket() {
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    ws = new WebSocket(`${protocol}//${location.host}`);
+    ws.addEventListener("open", () => { wsStatus.textContent = "Conectado"; });
+    ws.addEventListener("close", () => { wsStatus.textContent = "Desconectado"; setTimeout(connectWebSocket, 2000); });
+    ws.addEventListener("error", () => { wsStatus.textContent = "Error"; });
+    ws.addEventListener("message", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "connected") {
+          connectedCount.textContent = data.count;
+        } else if (data.type === "projection") {
+          const d = data.data || {};
+          if (d.type === "parts-info" && d.count > 1) {
+            parteActual = (d.current || 1) - 1;
+            partesActuales = d.count;
+            actualizarBotonParte();
+          }
+        }
+      } catch (error) { console.error(error); }
+    });
+  }
+
+  // ---- Corte en partes (lo calcula el celular) ----
+  function partirPalabras(words) {
+    const totalChars = words.reduce((a, w) => a + w.t.length + 1, 0);
+    if (totalChars <= UMBRAL_PARTES || words.length < 2) {
+      return [[0, words.length]];
+    }
+    let acc = 0, ideal = Math.floor(words.length / 2);
+    for (let i = 0; i < words.length; i++) {
+      acc += words[i].t.length + 1;
+      if (acc >= totalChars / 2) { ideal = i; break; }
+    }
+    let corte = ideal;
+    const ventana = Math.max(3, Math.floor(words.length * 0.12));
+    for (let d = 0; d <= ventana; d++) {
+      const izq = ideal - d, der = ideal + d;
+      if (izq > 0 && /[.,;:?!]$/.test(words[izq - 1].t)) { corte = izq; break; }
+      if (der < words.length - 1 && /[.,;:?!]$/.test(words[der - 1].t)) { corte = der; break; }
+    }
+    corte = Math.max(1, Math.min(corte, words.length - 1));
+    return [[0, corte], [corte, words.length]];
+  }
+
+  function actualizarBotonParte() {
+    if (partesActuales > 1) {
+      partButton.style.display = "";
+      const siguiente = (parteActual + 1) % partesActuales;
+      partButton.textContent = siguiente === 0 ? "◀️ Parte 1" : "▶️ Parte " + (siguiente + 1);
+    } else {
+      partButton.style.display = "none";
+    }
+  }
+
+  async function cargarVersiones() {
+    const response = await fetch("./api/versions");
+    const versions = await response.json();
+    versionSelect.innerHTML = '<option value="">Seleccione una versión</option>';
+    versions.forEach(version => {
+      const option = document.createElement("option");
+      option.value = version;
+      option.textContent = version;
+      versionSelect.appendChild(option);
+    });
+  }
+
+  async function cargarLibros() {
+    const version = versionSelect.value;
+    bookSelect.innerHTML = '<option value="">Cargando...</option>';
+    bookSelect.disabled = true;
+    chapterSelect.innerHTML = '<option value="">Seleccione un libro</option>';
+    chapterSelect.disabled = true;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Seleccione un capítulo o use el buscador.</div>';
+    if (!version) return;
+    const response = await fetch("./api/books?version=" + encodeURIComponent(version));
+    const books = await response.json();
+    bookSelect.innerHTML = '<option value="">Seleccione un libro</option>';
+    books.forEach(book => {
+      const option = document.createElement("option");
+      option.value = book.book_number;
+      option.textContent = book.book_name;
+      option.dataset.name = book.book_name;
+      bookSelect.appendChild(option);
+    });
+    bookSelect.disabled = false;
+  }
+
+  async function cargarCapitulos() {
+    const version = versionSelect.value;
+    const book = bookSelect.value;
+    selectedBookName = bookSelect.options[bookSelect.selectedIndex]?.dataset.name || "";
+    chapterSelect.innerHTML = '<option value="">Cargando...</option>';
+    chapterSelect.disabled = true;
+    if (!book) return;
+    const response = await fetch(`./api/chapters?version=${encodeURIComponent(version)}&book=${book}`);
+    const chapters = await response.json();
+    chapterSelect.innerHTML = '<option value="">Seleccione un capítulo</option>';
+    chapters.forEach(chapter => {
+      const option = document.createElement("option");
+      option.value = chapter;
+      option.textContent = chapter;
+      chapterSelect.appendChild(option);
+    });
+    chapterSelect.disabled = false;
+  }
+
+  async function cargarVersiculos() {
+    const version = versionSelect.value;
+    const book = bookSelect.value;
+    const chapter = chapterSelect.value;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Cargando...</div>';
+    currentVerses = [];
+    editarDeshabilitar();
+    salirModoPalabras(false);
+    if (!chapter) return;
+    const response = await fetch(`./api/verses?version=${encodeURIComponent(version)}&book=${book}&chapter=${chapter}`);
+    currentVerses = await response.json();
+    mostrarVersiculos();
+  }
+
+  function editarDeshabilitar() {
+    editVerseButton.disabled = true;
+  }
+
+  function mostrarVersiculos() {
+    versesContainer.innerHTML = "";
+    currentVerses.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "verse";
+      div.innerHTML = `
+        <div class="verse-number">${item.verse}</div>
+        <div class="verse-text">${escapeHtml(item.text)}</div>
+      `;
+      div.addEventListener("click", () => {
+        document.querySelectorAll(".verse").forEach(e => e.classList.remove("selected"));
+        div.classList.add("selected");
+        versiculoActual = {
+          referencia: `${selectedBookName} ${chapterSelect.value}:${item.verse}`,
+          version: versionSelect.value,
+          bookName: selectedBookName,
+          bookNumber: Number(bookSelect.value),
+          chapter: Number(chapterSelect.value),
+          verse: Number(item.verse),
+          text: item.text
+        };
+        editVerseButton.disabled = false;
+        salirModoPalabras(false);
+        parteActual = 0;
+        referenceElement.textContent = `${versiculoActual.referencia} — ${versiculoActual.version}`;
+        proyectar();
+      });
+      versesContainer.appendChild(div);
+    });
+  }
+
+  // ---- BUSCADOR ----
+  function resaltarConsulta(texto, q) {
+    const t = escapeHtml(texto);
+    if (!q) return t;
+    const re = new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
+    return t.replace(re, "<mark>$1</mark>");
+  }
+
+  async function hacerBusqueda() {
+    const q = searchInput.value.trim();
+    if (q.length < 2) return;
+    let version = versionSelect.value;
+    if (!version && versionSelect.options.length > 1) {
+      version = versionSelect.options[1].value;
+      versionSelect.value = version;
+      cargarLibros();
+    }
+    if (!version) return;
+
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Buscando...</div>';
+    try {
+      const response = await fetch(`./api/search?q=${encodeURIComponent(q)}&version=${encodeURIComponent(version)}`);
+      const resultados = await response.json();
+      enModoBusqueda = true;
+      searchInfo.style.display = "flex";
+      searchInfoTexto.textContent = `Resultados para “${q}”: ${resultados.length}`;
+      mostrarResultados(resultados, q);
+    } catch (e) {
+      versesContainer.innerHTML = '<div style="padding:20px;color:#b91c1c;">Error al buscar.</div>';
+    }
+  }
+
+  function mostrarResultados(resultados, q) {
+    versesContainer.innerHTML = "";
+    if (!resultados.length) {
+      versesContainer.innerHTML = `<div style="padding:20px;color:#777;">No se encontraron versículos con “${escapeHtml(q)}”.</div>`;
+      return;
+    }
+    resultados.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "verse";
+      div.innerHTML = `
+        <div class="verse-text">
+          <div class="search-ref">${escapeHtml(item.book_name)} ${item.chapter}:${item.verse}</div>
+          ${resaltarConsulta(item.text, q)}
+        </div>
+      `;
+      div.addEventListener("click", () => {
+        document.querySelectorAll(".verse").forEach(e => e.classList.remove("selected"));
+        div.classList.add("selected");
+        versiculoActual = {
+          referencia: `${item.book_name} ${item.chapter}:${item.verse}`,
+          version: versionSelect.value,
+          bookName: item.book_name,
+          bookNumber: item.book_number,
+          chapter: item.chapter,
+          verse: item.verse,
+          text: item.text
+        };
+        editVerseButton.disabled = false;
+        salirModoPalabras(false);
+        parteActual = 0;
+        referenceElement.textContent = `${versiculoActual.referencia} — ${versiculoActual.version}`;
+        proyectar();
+      });
+      versesContainer.appendChild(div);
+    });
+    versesContainer.scrollTop = 0;
+  }
+
+  function salirBusqueda() {
+    enModoBusqueda = false;
+    searchInfo.style.display = "none";
+    searchInput.value = "";
+    if (chapterSelect.value) {
+      cargarVersiculos();
+    } else {
+      versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Seleccione versión, libro y capítulo, o use el buscador.</div>';
+    }
+  }
+
+  searchButton.addEventListener("click", hacerBusqueda);
+  searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") hacerBusqueda(); });
+  clearSearchButton.addEventListener("click", salirBusqueda);
+
+  // ---- PROYECCIÓN (unificada: sirve para capítulo y búsqueda) ----
+  function enviarProyeccion(words, info) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const partes = partirPalabras(words);
+    partesActuales = partes.length;
+    if (parteActual >= partesActuales) parteActual = 0;
+    ws.send(JSON.stringify({
+      type: "project",
+      reference: info.referencia,
+      data: {
+        type: "verse",
+        words: words,
+        parts: partes,
+        part: parteActual,
+        version: info.version,
+        bookName: info.bookName,
+        chapter: info.chapter,
+        verse: info.verse
+      }
+    }));
+    actualizarBotonParte();
+  }
+
+  function proyectar() {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !versiculoActual) return;
+    const words = String(versiculoActual.text).replace(/\s+/g, " ").trim().split(" ")
+      .filter(Boolean).map(t => ({ t: t, h: 0 }));
+    enviarProyeccion(words, versiculoActual);
+  }
+
+  // ---- MODO RESALTAR: tocar palabra = resaltar + proyectar al instante ----
+  function activarModoPalabras(textoPlano, info) {
+    const palabras = String(textoPlano).replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+    freeText.innerHTML = palabras.map(p => `<span class="palabra">${escapeHtml(p)}</span>`).join(" ");
+    versiculoEnEdicion = info || null;
+    modoTexto.textContent = "Resaltando: " + info.referencia;
+    panelResaltar.classList.add("visible");
+    freeText.scrollTop = 0;
+  }
+
+  function salirModoPalabras(reproyectarLimpio) {
+    freeText.innerHTML = "";
+    versiculoEnEdicion = null;
+    panelResaltar.classList.remove("visible");
+    if (reproyectarLimpio && versiculoActual) { parteActual = 0; proyectar(); }
+  }
+
+  freeText.addEventListener("click", (e) => {
+    if (!e.target.classList || !e.target.classList.contains("palabra")) return;
+    e.target.classList.toggle("resaltada");
+    autoProyectar();
+  });
+
+  function autoProyectar() {
+    if (!versiculoEnEdicion) return;
+    const words = Array.from(freeText.querySelectorAll("span.palabra"))
+      .map(s => ({ t: s.textContent, h: s.classList.contains("resaltada") ? 1 : 0 }));
+    if (!words.length) return;
+    enviarProyeccion(words, versiculoEnEdicion);
+  }
+
+  editVerseButton.addEventListener("click", () => {
+    if (!versiculoActual) return;
+    activarModoPalabras(versiculoActual.text, versiculoActual);
+  });
+
+  salirEdicion.addEventListener("click", () => salirModoPalabras(true));
+
+  partButton.addEventListener("click", () => {
+    parteActual = (parteActual + 1) % Math.max(partesActuales, 1);
+    if (versiculoEnEdicion) autoProyectar();
+    else proyectar();
+  });
+
+  function limpiar() {
+    versionSelect.value = "";
+    bookSelect.innerHTML = '<option value="">Seleccione una versión</option>';
+    bookSelect.disabled = true;
+    chapterSelect.innerHTML = '<option value="">Seleccione un libro</option>';
+    chapterSelect.disabled = true;
+    versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Seleccione versión, libro y capítulo, o use el buscador.</div>';
+    referenceElement.textContent = "Seleccione una referencia";
+    versiculoActual = null;
+    currentVerses = [];
+    searchInput.value = "";
+    searchInfo.style.display = "none";
+    enModoBusqueda = false;
+    editarDeshabilitar();
+    salirModoPalabras(false);
+  }
+
+  versionSelect.addEventListener("change", () => {
+    searchInput.value = "";
+    searchInfo.style.display = "none";
+    enModoBusqueda = false;
+    cargarLibros();
+  });
+  bookSelect.addEventListener("change", cargarCapitulos);
+  chapterSelect.addEventListener("change", cargarVersiculos);
+  clearButton.addEventListener("click", limpiar);
+
+  cargarVersiones();
+  connectWebSocket();
+</script>
 </body>
 </html>
