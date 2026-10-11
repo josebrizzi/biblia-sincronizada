@@ -4,11 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proyección - Biblia Sincronizada</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
     body {
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
       background: #ffffff;
       color: #111;
       overflow: hidden;
@@ -26,13 +29,15 @@
       position: relative;
     }
     .reference {
+      font-family: 'Montserrat', 'Inter', sans-serif;
+      font-weight: 900;
       width: 100%;
       text-align: center;
-      font-size: clamp(32px, 4.5vw, 56px);
-      font-weight: bold;
+      font-size: clamp(30px, 4.2vw, 54px);
       margin-bottom: 4vh;
       color: #173f35;
     }
+    /* Tamaño de letra FIJO: nunca se achica */
     .text {
       width: 100%;
       max-height: 76vh;
@@ -45,7 +50,6 @@
       color: #111;
       scrollbar-width: thin;
     }
-    .text.quote { text-align: justify; }
     .text::-webkit-scrollbar { width: 8px; }
     .text::-webkit-scrollbar-thumb { background: #bbb; border-radius: 8px; }
     .version {
@@ -57,35 +61,26 @@
     }
     .waiting { text-align: center; color: #777; }
     .fullscreen-button {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      width: 44px;
-      height: 44px;
-      border: none;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.15);
-      color: #333;
-      cursor: pointer;
-      font-size: 20px;
-      opacity: 0.35;
-      transition: opacity 0.2s;
+      position: fixed; right: 18px; bottom: 18px;
+      width: 44px; height: 44px; border: none; border-radius: 50%;
+      background: rgba(0,0,0,0.15); color: #333; cursor: pointer;
+      font-size: 20px; opacity: 0.35; transition: opacity 0.2s;
     }
     .fullscreen-button:hover { opacity: 1; }
+    #partBadge {
+      position: fixed; right: 74px; bottom: 18px;
+      padding: 9px 16px; border-radius: 22px;
+      background: #173f35; color: #fff;
+      font-family: Arial, sans-serif; font-size: 15px; font-weight: bold;
+      display: none; cursor: pointer; opacity: 0.9;
+    }
     .status {
-      position: fixed;
-      left: 15px;
-      bottom: 15px;
-      padding: 6px 10px;
-      border-radius: 20px;
-      background: #ddd;
-      color: #555;
-      font-size: 12px;
-      opacity: 0.45;
-      font-family: Arial, sans-serif;
+      position: fixed; left: 15px; bottom: 15px;
+      padding: 6px 10px; border-radius: 20px;
+      background: #ddd; color: #555; font-size: 12px; opacity: 0.45;
     }
     .status.connected { background: #dcece5; color: #173f35; }
-    mark, .resaltado { background-color: #ffff00; }
+    mark { background-color: #ffff00; }
     @media (max-width: 600px) {
       .proyeccion { padding: 4vh 5vw; }
       .reference { margin-bottom: 3vh; }
@@ -94,12 +89,13 @@
   </style>
 </head>
 <body>
-  <main class="proyeccion">
+  <main id="main" class="proyeccion">
     <div id="reference" class="reference">Biblia Sincronizada</div>
     <div id="text" class="text waiting">Esperando que el predicador proyecte un versículo...</div>
     <div id="version" class="version"></div>
   </main>
   <button id="fullscreenButton" class="fullscreen-button" title="Pantalla completa">⛶</button>
+  <div id="partBadge">Parte 1 de 2 ▶</div>
   <div id="status" class="status">Conectando...</div>
   <script>
     const reference = document.getElementById("reference");
@@ -107,12 +103,156 @@
     const version = document.getElementById("version");
     const status = document.getElementById("status");
     const fullscreenButton = document.getElementById("fullscreenButton");
+    const partBadge = document.getElementById("partBadge");
+    const main = document.getElementById("main");
+
     let ws;
+    let ultimoData = null;   // último versículo recibido
+    let ultimoRef = "";      // referencia del último versículo
+    let divisiones = [];     // cómo quedó cortado el versículo
+    let totalPartes = 1;
+    let parteActual = 0;
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Une las palabras en HTML; las resaltadas consecutivas van en un solo <mark>
+    function palabrasAHtml(palabras, desde, hasta) {
+      let html = "";
+      let enMark = false;
+      for (let i = desde; i < hasta; i++) {
+        const w = palabras[i];
+        if (w.h && !enMark) { html += "<mark>"; enMark = true; }
+        if (!w.h && enMark) { html += "</mark>"; enMark = false; }
+        html += escapeHtml(w.t);
+        if (i < hasta - 1) html += " ";
+      }
+      if (enMark) html += "</mark>";
+      return html;
+    }
+
+    // Muestra el versículo completo; si no entra, lo corta en 2 por la mitad
+    function medirYDividir(palabras) {
+      text.className = "text";
+      text.innerHTML = palabrasAHtml(palabras, 0, palabras.length);
+      if (text.scrollHeight <= text.clientHeight + 2) {
+        return [{ from: 0, to: palabras.length }];
+      }
+      const total = palabras.reduce((a, w) => a + w.t.length + 1, 0);
+      let acc = 0, corte = Math.floor(palabras.length / 2);
+      for (let i = 0; i < palabras.length; i++) {
+        acc += palabras[i].t.length + 1;
+        if (acc >= total / 2) { corte = i; break; }
+      }
+      corte = Math.max(1, Math.min(corte, palabras.length - 1));
+      return [{ from: 0, to: corte }, { from: corte, to: palabras.length }];
+    }
+
+    function mostrarVerse(data) {
+      ultimoData = data;
+      const ref = `${data.bookName} ${data.chapter}:${data.verse}`;
+      const mismaRef = (ref === ultimoRef);
+      ultimoRef = ref;
+      reference.textContent = ref;
+      version.textContent = data.version || "";
+
+      divisiones = medirYDividir(data.words || []);
+      totalPartes = divisiones.length;
+      if (totalPartes === 1) {
+        parteActual = 0;
+      } else if (!(mismaRef && parteActual > 0 && parteActual < totalPartes)) {
+        parteActual = 0;
+      }
+      if (totalPartes > 1) {
+        text.innerHTML = palabrasAHtml(data.words, divisiones[parteActual].from, divisiones[parteActual].to);
+      }
+      text.scrollTop = 0;
+      actualizarBadge();
+      avisarPartes();
+    }
+
+    function mostrarFree(data) {
+      ultimoData = null;
+      ultimoRef = "";
+      totalPartes = 1;
+      parteActual = 0;
+      reference.textContent = "Cita";
+      text.className = "text";
+      text.innerHTML = data.html || "";
+      version.textContent = "";
+      text.scrollTop = 0;
+      actualizarBadge();
+      avisarPartes();
+    }
+
+    function mostrarProyeccion(data) {
+      if (!data) return;
+      if (data.type === "verse") mostrarVerse(data);
+      else if (data.type === "freeText") mostrarFree(data);
+      else if (data.type === "goto-part") irAParte((data.part || 1) - 1);
+      // "parts-info" (eco propio) se ignora
+    }
+
+    function irAParte(n) {
+      if (!ultimoData || !ultimoData.words) return;
+      if (n < 0 || n >= totalPartes) return;
+      parteActual = n;
+      text.innerHTML = palabrasAHtml(ultimoData.words, divisiones[n].from, divisiones[n].to);
+      text.scrollTop = 0;
+      actualizarBadge();
+      avisarPartes();
+    }
+
+    function siguiente() { irAParte(parteActual + 1); }
+    function anterior() { irAParte(parteActual - 1); }
+
+    function actualizarBadge() {
+      if (totalPartes > 1) {
+        partBadge.style.display = "block";
+        partBadge.textContent = "Parte " + (parteActual + 1) + " de " + totalPartes +
+          (parteActual + 1 < totalPartes ? "  ▶" : "");
+      } else {
+        partBadge.style.display = "none";
+      }
+    }
+
+    // Avisa al celular cuántas partes hay y en cuál está
+    function avisarPartes() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        type: "project",
+        reference: "",
+        data: { type: "parts-info", count: totalPartes, current: parteActual + 1 }
+      }));
+    }
+
+    // Controles en la PC: clic en la pantalla, flechas o barra espaciadora
+    main.addEventListener("click", siguiente);
+    partBadge.addEventListener("click", siguiente);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); siguiente(); }
+      else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); anterior(); }
+    });
+
+    // Si cambia el tamaño de la ventana o entra a pantalla completa, se vuelve a medir
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { if (ultimoData) mostrarVerse(ultimoData); }, 200);
+    });
+    document.addEventListener("fullscreenchange", () => {
+      setTimeout(() => { if (ultimoData) mostrarVerse(ultimoData); }, 200);
+    });
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => { if (ultimoData) mostrarVerse(ultimoData); });
+    }
 
     function conectar() {
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      const wsBase = location.pathname.startsWith("/biblia") ? "/biblia" : "";
-      ws = new WebSocket(`${protocol}//${location.host}${wsBase}`);
+      ws = new WebSocket(`${protocol}//${location.host}`);
       ws.addEventListener("open", () => {
         status.textContent = "Conectado";
         status.classList.add("connected");
@@ -126,66 +266,12 @@
         status.textContent = "Error de conexión";
         status.classList.remove("connected");
       });
-      ws.addEventListener("message", event => {
+      ws.addEventListener("message", (event) => {
         try {
           const message = JSON.parse(event.data);
           if (message.type === "projection") mostrarProyeccion(message.data);
         } catch (error) { console.error(error); }
       });
-    }
-
-    function limpiarHTML(html) {
-      const contenedor = document.createElement("div");
-      contenedor.innerHTML = html || "";
-      const permitidas = ["B", "STRONG", "U", "S", "DEL", "I", "EM", "BR", "DIV", "P", "MARK", "SPAN", "FONT"];
-      contenedor.querySelectorAll("*").forEach(elemento => {
-        if (!permitidas.includes(elemento.tagName)) {
-          const fragmento = document.createDocumentFragment();
-          while (elemento.firstChild) fragmento.appendChild(elemento.firstChild);
-          elemento.replaceWith(fragmento);
-          return;
-        }
-        Array.from(elemento.attributes).forEach(atributo => {
-          if (atributo.name !== "style") {
-            elemento.removeAttribute(atributo.name);
-            return;
-          }
-          const alineacion = elemento.style.textAlign;
-          const fondo = elemento.style.backgroundColor;
-          elemento.removeAttribute("style");
-          if (alineacion === "justify") elemento.style.textAlign = "justify";
-          if (fondo) elemento.style.backgroundColor = fondo;
-        });
-      });
-      return contenedor.innerHTML;
-    }
-
-    function mostrarProyeccion(data) {
-      if (!data) return;
-
-      if (data.type === "freeText") {
-        reference.textContent = "Cita";
-        text.className = "text quote";
-        text.innerHTML = limpiarHTML(data.html || "");
-        version.textContent = "";
-        text.scrollTop = 0;
-        return;
-      }
-
-      if (data.type === "verse-html") {
-        reference.textContent = `${data.bookName} ${data.chapter}:${data.verse}`;
-        text.className = "text";
-        text.innerHTML = limpiarHTML(data.html || "");
-        version.textContent = data.version || "";
-        text.scrollTop = 0;
-        return;
-      }
-
-      reference.textContent = `${data.bookName} ${data.chapter}:${data.verse}`;
-      text.className = "text";
-      text.textContent = data.text;
-      version.textContent = data.version || "";
-      text.scrollTop = 0;
     }
 
     async function pantallaCompleta() {
