@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Biblia Sincronizada — Predicador</title>
 <style>
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin: 0; font-family: Arial, sans-serif; background: #f4f1ea; color: #222; }
   header { background: #173f35; color: white; padding: 18px 24px; }
   header h1 { margin: 0; font-size: 26px; }
@@ -17,7 +17,7 @@
   select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; background: white; }
   .reference { margin-top: 18px; font-size: 20px; font-weight: bold; }
   .verses { margin-top: 20px; max-height: 430px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; }
-  .verse { display: flex; gap: 12px; padding: 13px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.15s; }
+  .verse { display: flex; gap: 12px; padding: 13px; border-bottom: 1px solid #eee; cursor: pointer; }
   .verse:last-child { border-bottom: none; }
   .verse:hover { background: #f4f7f5; }
   .verse.selected { background: #dcece5; outline: 2px solid #173f35; }
@@ -31,31 +31,26 @@
   #editVerseButton:disabled { background: #ccc; cursor: not-allowed; }
   #clearButton { background: #ddd; color: #222; }
   .free-text-panel { margin-top: 20px; padding: 18px; border: 1px solid #ddd; border-radius: 12px; background: #fafafa; }
-  .free-text-panel label { display: block; margin-bottom: 8px; font-weight: bold; color: #173f35; }
-  .quote-toolbar { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-  .quote-toolbar button { min-width: 42px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 7px; background: white; color: #222; cursor: pointer; font-size: 17px; }
-  .quote-toolbar button:hover { background: #e9e9e9; }
-  #highlightButton { background: #fff59d; }
+  .free-text-panel > label { display: block; margin-bottom: 8px; font-weight: bold; color: #173f35; }
   .quote-editor {
-    width: 100%; min-height: 130px; max-height: 300px; overflow-y: auto;
-    box-sizing: border-box; padding: 12px; border: 1px solid #ccc; border-radius: 9px;
-    background: white; resize: vertical; font-family: Arial, Helvetica, sans-serif;
-    font-size: 17px; line-height: 1.5; outline: none; white-space: pre-wrap;
+    width: 100%; min-height: 140px; max-height: 340px; overflow-y: auto;
+    box-sizing: border-box; padding: 14px; border: 1px solid #ccc; border-radius: 9px;
+    background: white; resize: vertical; font-family: Arial, sans-serif;
+    font-size: 19px; line-height: 1.8; outline: none;
   }
   .quote-editor:focus { border-color: #173f35; box-shadow: 0 0 0 2px rgba(23,63,53,0.12); }
   .quote-editor:empty::before { content: attr(data-placeholder); color: #888; pointer-events: none; }
-  .free-text-actions { display: flex; gap: 10px; margin-top: 10px; }
+  .palabra { cursor: pointer; border-radius: 3px; }
+  .palabra.resaltada { background-color: #ffff00; }
+  .modo-edicion {
+    margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+    background: #fff7e0; border: 1px solid #e6c96a; color: #7a5c00;
+    font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .modo-edicion button { background: none; color: #7a5c00; padding: 6px 10px; font-size: 14px; text-decoration: underline; }
+  .free-text-actions { display: flex; gap: 10px; margin-top: 12px; }
   #projectTextButton { background: #173f35; color: white; flex: 1; }
   #clearTextButton { background: #ddd; color: #222; }
-  .modo-edicion {
-    display: none; margin-top: 12px; padding: 10px 12px; border-radius: 8px;
-    background: #fff7e0; border: 1px solid #e6c96a; color: #7a5c00;
-    font-weight: bold; font-size: 15px;
-  }
-  .modo-edicion button {
-    background: none; border: none; color: #7a5c00; font-size: 16px;
-    padding: 2px 8px; cursor: pointer; text-decoration: underline;
-  }
   .status { margin-top: 15px; padding: 10px; border-radius: 8px; background: #f1f1f1; }
   @media (max-width: 700px) {
     .grid { grid-template-columns: 1fr; }
@@ -93,25 +88,17 @@
 
     <div class="actions">
       <button id="projectButton" disabled>📖 PROYECTAR</button>
-      <button id="editVerseButton" disabled title="Carga el versículo en el editor para resaltar">🖍️ Editar y resaltar</button>
+      <button id="editVerseButton" disabled title="Carga el versículo partido en palabras para resaltar tocando">🖍️ Editar y resaltar</button>
       <button id="clearButton">Limpiar</button>
     </div>
 
     <div class="free-text-panel">
-      <label for="freeText">📝 Editor (cita o versículo resaltado)</label>
-      <div class="quote-toolbar">
-        <button type="button" id="boldButton" title="Negrita"><b>N</b></button>
-        <button type="button" id="underlineButton" title="Subrayado"><u>S</u></button>
-        <button type="button" id="strikeButton" title="Tachado"><s>T</s></button>
-        <button type="button" id="italicButton" title="Cursiva"><i>C</i></button>
-        <button type="button" id="highlightButton" title="Resaltar como fibón">🖍️</button>
-        <button type="button" id="justifyButton" title="Justificar">≡</button>
-      </div>
+      <label>📝 Editor — para resaltar, tocá «Editar y resaltar» y luego tocá las palabras</label>
       <div id="freeText" class="quote-editor" contenteditable="true"
-           data-placeholder="Escriba aquí la cita, o use «Editar y resaltar» para marcar un versículo..."></div>
-      <div class="modo-edicion" id="modoEdicion">
+           data-placeholder="Aquí aparecerá el versículo partido en palabras, o escribí una cita..."></div>
+      <div class="modo-edicion" id="modoEdicion" style="display:none;">
         <span id="modoTexto"></span>
-        <button type="button" id="salirEdicion">✕ salir (proyectar sin resaltado)</button>
+        <button type="button" id="salirEdicion">✕ salir</button>
       </div>
       <div class="free-text-actions">
         <button id="projectTextButton">📖 PROYECTAR</button>
@@ -138,17 +125,11 @@
   const freeText = document.getElementById("freeText");
   const projectTextButton = document.getElementById("projectTextButton");
   const clearTextButton = document.getElementById("clearTextButton");
-  const boldButton = document.getElementById("boldButton");
-  const underlineButton = document.getElementById("underlineButton");
-  const strikeButton = document.getElementById("strikeButton");
-  const italicButton = document.getElementById("italicButton");
-  const highlightButton = document.getElementById("highlightButton");
-  const justifyButton = document.getElementById("justifyButton");
-  const wsStatus = document.getElementById("wsStatus");
-  const connectedCount = document.getElementById("connectedCount");
   const modoEdicion = document.getElementById("modoEdicion");
   const modoTexto = document.getElementById("modoTexto");
   const salirEdicion = document.getElementById("salirEdicion");
+  const wsStatus = document.getElementById("wsStatus");
+  const connectedCount = document.getElementById("connectedCount");
 
   let ws = null;
   let currentVerses = [];
@@ -156,36 +137,15 @@
   let selectedBookName = "";
   let versiculoEnEdicion = null;
 
-  freeText.addEventListener("paste", event => {
-    event.preventDefault();
-    const texto = event.clipboardData.getData("text/plain");
-    let limpio = texto.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    limpio = limpio.replace(/-\n(?=\p{L})/gu, "");
-    limpio = limpio.replace(/\n{3,}/g, "\n\n").replace(/(?<!\n)\n(?!\n)/g, " ");
-    document.execCommand("insertText", false, limpio);
-  });
-
-  function aplicarFormato(comando) {
-    freeText.focus();
-    document.execCommand(comando, false, null);
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
-  function resaltar() {
-    freeText.focus();
-    document.execCommand("styleWithCSS", false, true);
-    document.execCommand("hiliteColor", false, "#ffff00");
-  }
-
-  boldButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("bold"); });
-  underlineButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("underline"); });
-  strikeButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("strikeThrough"); });
-  italicButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("italic"); });
-  highlightButton.addEventListener("mousedown", e => { e.preventDefault(); resaltar(); });
-  justifyButton.addEventListener("mousedown", e => { e.preventDefault(); aplicarFormato("justifyFull"); });
 
   function connectWebSocket() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const wsBase = location.pathname.startsWith("/biblia") ? "/biblia" : "";
-    ws = new WebSocket(`${protocol}//${location.host}${wsBase}`);
+    ws = new WebSocket(`${protocol}//${location.host}`);
     ws.addEventListener("open", () => { wsStatus.textContent = "Conectado"; });
     ws.addEventListener("close", () => { wsStatus.textContent = "Desconectado"; setTimeout(connectWebSocket, 2000); });
     ws.addEventListener("error", () => { wsStatus.textContent = "Error"; });
@@ -299,54 +259,93 @@
     if (!ws || ws.readyState !== WebSocket.OPEN || !selectedVerse) return;
     const verse = currentVerses.find(item => Number(item.verse) === Number(selectedVerse));
     if (!verse) return;
-    const data = {
-      version: versionSelect.value,
-      bookNumber: Number(bookSelect.value),
-      bookName: selectedBookName,
-      chapter: Number(chapterSelect.value),
-      verse: Number(verse.verse),
-      text: verse.text
-    };
     ws.send(JSON.stringify({
       type: "project",
-      reference: `${selectedBookName} ${chapterSelect.value}:${selectedVerse}`,
-      data
+      reference: `${selectedBookName} ${chapterSelect.value}:${verse.verse}`,
+      data: {
+        version: versionSelect.value,
+        bookNumber: Number(bookSelect.value),
+        bookName: selectedBookName,
+        chapter: Number(chapterSelect.value),
+        verse: Number(verse.verse),
+        text: verse.text
+      }
     }));
   }
 
-  function activarModoEdicion(info) {
-    versiculoEnEdicion = info;
-    freeText.innerHTML = escapeHtml(info.texto);
-    modoTexto.textContent = "🖍️ Resaltando: " + info.referencia;
-    modoEdicion.style.display = "block";
-    freeText.focus();
+  // ---- MODO RESALTAR: tocar palabra por palabra ----
+  function activarModoPalabras(textoPlano, info) {
+    const palabras = String(textoPlano).replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+    freeText.innerHTML = palabras.map(p => `<span class="palabra">${escapeHtml(p)}</span>`).join(" ");
+    freeText.dataset.modo = "palabras";
+    versiculoEnEdicion = info || null;
+    modoTexto.textContent = info
+      ? "🖍️ Tocá las palabras para resaltarlas: " + info.referencia
+      : "🖍️ Tocá las palabras para resaltarlas (cita)";
+    modoEdicion.style.display = "flex";
   }
 
-  function desactivarModoEdicion() {
+  freeText.addEventListener("click", (e) => {
+    if (freeText.dataset.modo !== "palabras") return;
+    if (e.target.classList && e.target.classList.contains("palabra")) {
+      e.target.classList.toggle("resaltada");
+    }
+  });
+
+  function salirModoPalabras() {
+    freeText.innerHTML = "";
+    delete freeText.dataset.modo;
     versiculoEnEdicion = null;
     modoEdicion.style.display = "none";
   }
 
+  salirEdicion.addEventListener("click", salirModoPalabras);
+
   editVerseButton.addEventListener("click", () => {
     const verse = currentVerses.find(item => Number(item.verse) === Number(selectedVerse));
     if (!verse) return;
-    activarModoEdicion({
+    activarModoPalabras(verse.text, {
       referencia: `${selectedBookName} ${chapterSelect.value}:${verse.verse}`,
       bookName: selectedBookName,
       chapter: Number(chapterSelect.value),
       verse: Number(verse.verse),
-      version: versionSelect.value,
-      texto: verse.text
+      version: versionSelect.value
     });
+    freeText.scrollTop = 0;
   });
 
-  salirEdicion.addEventListener("click", () => {
-    desactivarModoEdicion();
-    freeText.innerHTML = "";
-  });
+  function htmlDesdePalabras() {
+    const spans = freeText.querySelectorAll("span.palabra");
+    return Array.from(spans)
+      .map(s => s.classList.contains("resaltada") ? "<mark>" + escapeHtml(s.textContent) + "</mark>" : escapeHtml(s.textContent))
+      .join(" ");
+  }
 
   function proyectarTexto() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    if (freeText.dataset.modo === "palabras") {
+      const html = htmlDesdePalabras();
+      if (!html) return;
+      if (versiculoEnEdicion) {
+        ws.send(JSON.stringify({
+          type: "project",
+          reference: versiculoEnEdicion.referencia,
+          data: {
+            type: "verse-html",
+            html: html,
+            bookName: versiculoEnEdicion.bookName,
+            chapter: versiculoEnEdicion.chapter,
+            verse: versiculoEnEdicion.verse,
+            version: versiculoEnEdicion.version
+          }
+        }));
+      } else {
+        ws.send(JSON.stringify({ type: "project", reference: "Cita", data: { type: "freeText", html: html } }));
+      }
+      return;
+    }
+
     const contenido = freeText.innerHTML.trim();
     if (!contenido) return;
     if (versiculoEnEdicion) {
@@ -357,21 +356,15 @@
           type: "verse-html",
           html: contenido,
           bookName: versiculoEnEdicion.bookName,
-          chapter: versiculoEdicionChapter(),
+          chapter: versiculoEnEdicion.chapter,
           verse: versiculoEnEdicion.verse,
           version: versiculoEnEdicion.version
         }
       }));
     } else {
-      ws.send(JSON.stringify({
-        type: "project",
-        reference: "Cita",
-        data: { type: "freeText", html: contenido }
-      }));
+      ws.send(JSON.stringify({ type: "project", reference: "Cita", data: { type: "freeText", html: contenido } }));
     }
   }
-
-  function versiculoEdicionChapter() { return versiculoEnEdicion.chapter; }
 
   function limpiar() {
     versionSelect.value = "";
@@ -385,16 +378,7 @@
     currentVerses = [];
     projectButton.disabled = true;
     editVerseButton.disabled = true;
-    desactivarModoEdicion();
-  }
-
-  function escapeHtml(text) {
-    return String(text)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    salirModoPalabras();
   }
 
   versionSelect.addEventListener("change", cargarLibros);
@@ -403,11 +387,7 @@
   projectButton.addEventListener("click", proyectar);
   clearButton.addEventListener("click", limpiar);
   projectTextButton.addEventListener("click", proyectarTexto);
-  clearTextButton.addEventListener("click", () => {
-    freeText.innerHTML = "";
-    desactivarModoEdicion();
-    freeText.focus();
-  });
+  clearTextButton.addEventListener("click", () => { salirModoPalabras(); freeText.focus(); });
 
   cargarVersiones();
   connectWebSocket();
