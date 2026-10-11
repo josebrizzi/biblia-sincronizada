@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Biblia Sincronizada — Predicador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin:0; font-family: Arial, sans-serif; background:#f4f1ea; color:#222; }
@@ -27,14 +30,25 @@
   .pbox.prev::before { content:"◀ TOCÁ PARA VOLVER"; display:block; font-size:10px; color:#999; letter-spacing:.5px; }
   .pbox.next { background:#dcece5; color:#173f35; }
   .pbox.next::after { content:"TOCÁ PARA AVANZAR ▶"; display:block; font-size:10px; color:#5c8a7d; text-align:right; letter-spacing:.5px; }
-  .pbox.cur { background:#fff; border:2px solid #173f35; cursor:default; }
-  .pbox.cur .pref { color:#173f35; font-size:16px; }
-  .pbox.cur .ptext { font-size:22px; font-weight:bold; line-height:1.5; max-height:40vh; overflow-y:auto; }
+  .pbox.cur { background:#fff; border:2px solid #173f35; cursor:default; transition: background 0.3s, color 0.3s; }
+  .pbox.cur .pref { color:#173f35; font-size:16px; font-family:'Montserrat', Arial, sans-serif; }
+  .pbox.cur .ptext { font-size:22px; font-weight:bold; line-height:1.5; max-height:40vh; overflow-y:auto;
+                     font-family:'Inter', Arial, sans-serif; }
+  /* Vista previa oscura: imita la proyección con fondo oscuro */
+  .pbox.cur.dark { background:#0e1216; color:#f2f2f2; border-color:#4a7d6d; }
+  .pbox.cur.dark .pref { color:#7fd4b5; }
   .pbox.cur.resaltando { border-color:#b45309; }
+  .pbox.cur.resaltando::before { content:"🖍️ Elegí un color y tocá las palabras"; display:block; font-size:11px; color:#b45309; letter-spacing:.4px; margin-bottom:6px; font-weight:bold; }
   .pbox.cur.resaltando .ptext { cursor:pointer; user-select:none; }
   .pbox.hidden { display:none; }
   .ptext .palabra { border-radius:3px; }
-  .ptext .palabra.resaltada { background:#ffff00; }
+  .ptext .palabra.resaltada { padding:0 1px; }
+
+  /* Paleta de colores de resaltado */
+  .colores { display:none; gap:10px; align-items:center; padding:2px 4px; }
+  .preview.resaltando .colores { display:flex; }
+  .cbtn { width:36px; height:36px; border-radius:50%; border:3px solid #ccc; cursor:pointer; }
+  .cbtn.sel { border-color:#173f35; box-shadow:0 0 0 2px #fff inset; }
 
   .tabs { display:flex; background:#fff; border-bottom:2px solid #e0ddd5; position:sticky; top:0; z-index:5; }
   .tab { flex:1; text-align:center; padding:12px 2px; font-weight:bold; font-size:13px; color:#888; cursor:pointer; border-bottom:3px solid transparent; }
@@ -48,12 +62,13 @@
   .book-row { padding:16px 14px; border-bottom:1px solid #e5e5e5; font-size:21px; color:#173f35; cursor:pointer; background:#fff; }
   .book-row:hover { background:#f0f5f2; }
 
+  .vtoolbar { display:flex; justify-content:flex-end; margin-bottom:8px; }
+  .mini-btn { border:none; border-radius:9px; background:#173f35; color:#fff; font-size:15px; font-weight:bold; padding:9px 16px; cursor:pointer; }
+
   .grid-num { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
   .numcell { background:#e3ece7; color:#173f35; font-weight:bold; font-size:20px; text-align:center; padding:16px 0; border-radius:6px; cursor:pointer; }
   .numcell:hover { background:#d3e2db; }
   .numcell.selected { background:#173f35; color:#fff; }
-
-  .list-toggle { display:block; width:100%; margin-top:12px; padding:14px; border:none; border-radius:10px; background:#173f35; color:#fff; font-size:17px; font-weight:bold; cursor:pointer; }
 
   .vlist { margin-top:12px; border:1px solid #ddd; border-radius:10px; overflow:hidden; }
   .verse { display:flex; gap:10px; padding:12px; border-bottom:1px solid #e8e8e8; cursor:pointer; background:#fff; }
@@ -69,6 +84,9 @@
   #editVerseButton { background:#b45309; color:#fff; flex:1; }
   #editVerseButton.resaltando { background:#7a5c00; }
   #editVerseButton:disabled { background:#ccc; cursor:not-allowed; }
+  .tema-btn { width:56px; font-size:20px; }
+  #lightBtn { background:#fff8e1; color:#8a6d00; }
+  #darkBtn { background:#263238; color:#ffd54f; }
   #clearButton { background:#ddd; color:#222; }
 
   .status { padding:6px 12px 4px; font-size:13px; color:#666; }
@@ -77,7 +95,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v9 · <span id="connectedCount">0</span> conect.</span>
+  <span>v11 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -96,6 +114,7 @@
 <div class="preview" id="preview">
   <div class="pbox prev hidden" id="prevBox"></div>
   <div class="pbox cur" id="curBox"><div class="pref" id="curRef"></div><div class="ptext" id="curText"></div></div>
+  <div class="colores" id="coloresRow"></div>
   <div class="pbox next hidden" id="nextBox"></div>
 </div>
 
@@ -114,8 +133,10 @@
     <div class="grid-num" id="chapterGrid"></div>
   </section>
   <section class="tabpage" id="page-versiculo">
+    <div class="vtoolbar">
+      <button id="dotsButton" class="mini-btn">⋮ Lista</button>
+    </div>
     <div class="grid-num" id="verseGrid"></div>
-    <button class="list-toggle" id="listToggle">📄 Ver lista de versículos</button>
     <div class="vlist" id="verseList" style="display:none;"></div>
   </section>
   <section class="tabpage" id="page-busqueda">
@@ -124,6 +145,8 @@
 </main>
 
 <div class="actions">
+  <button id="lightBtn" class="tema-btn" title="Fondo claro">☀️</button>
+  <button id="darkBtn" class="tema-btn" title="Fondo oscuro">🌙</button>
   <button id="editVerseButton" disabled>🖍️ Resaltar</button>
   <button id="clearButton">Limpiar</button>
 </div>
@@ -136,7 +159,7 @@
   const chapterGrid = document.getElementById("chapterGrid");
   const verseGrid = document.getElementById("verseGrid");
   const verseList = document.getElementById("verseList");
-  const listToggle = document.getElementById("listToggle");
+  const dotsButton = document.getElementById("dotsButton");
   const resultList = document.getElementById("resultList");
   const preview = document.getElementById("preview");
   const prevBox = document.getElementById("prevBox");
@@ -144,27 +167,35 @@
   const curBox = document.getElementById("curBox");
   const curRef = document.getElementById("curRef");
   const curText = document.getElementById("curText");
+  const coloresRow = document.getElementById("coloresRow");
   const searchInput = document.getElementById("searchInput");
   const searchButton = document.getElementById("searchButton");
   const searchInfo = document.getElementById("searchInfo");
   const searchInfoTexto = document.getElementById("searchInfoTexto");
   const clearSearchButton = document.getElementById("clearSearchButton");
   const editVerseButton = document.getElementById("editVerseButton");
+  const lightBtn = document.getElementById("lightBtn");
+  const darkBtn = document.getElementById("darkBtn");
   const clearButton = document.getElementById("clearButton");
   const wsStatus = document.getElementById("wsStatus");
   const connectedCount = document.getElementById("connectedCount");
 
-  const UMBRAL_EST = 240; // solo para estimar el texto de la parte siguiente antes de que responda la pantalla
+  const UMBRAL_EST = 240;
+  const COLORES = ["#ffff00", "#8aff8a", "#7cdcff", "#ff9ee8", "#ffc966"];
+  const NOMBRES = ["Amarillo", "Verde", "Celeste", "Rosa", "Naranja"];
+  let colorActual = COLORES[0];
+
   let ws = null;
-  let playlist = [];        // versículos (sin dividir; la división la decide la pantalla)
-  let curIdx = -1;          // versículo actual
-  let curPart = 0;          // parte actual del versículo actual
-  let partesInfo = null;    // {count, ranges} informadas por la pantalla
+  let playlist = [];
+  let curIdx = -1;
+  let curPart = 0;
+  let partesInfo = null;
   let selectedBookName = "";
   let currentBookNumber = null;
   let ultimoTab = "libro";
   let modoResaltar = false;
   let qBusqueda = "";
+  let temaOscuro = false;
 
   function escapeHtml(t) {
     return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -191,7 +222,6 @@
           const d = data.data || {};
           if (d.type === "parts-info" && curIdx >= 0) {
             const v = playlist[curIdx];
-            // solo si corresponde al versículo que estamos proyectando
             if (v && Number(d.verse) === Number(v.verse) && Number(d.chapter) === Number(v.chapter)) {
               partesInfo = { count: d.count, ranges: d.ranges || null };
               curPart = Math.min((d.current || 1) - 1, d.count - 1);
@@ -203,7 +233,46 @@
     });
   }
 
-  // ---------- Estimación local de partes (para previews; la real la manda la pantalla) ----------
+  function enviarTema(dark) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "project", reference: "", data: { type: "theme", dark: dark } }));
+    }
+  }
+
+  function setTema(dark, avisar) {
+    temaOscuro = dark;
+    curBox.classList.toggle("dark", dark);
+    try { localStorage.setItem("adminTema", dark ? "oscuro" : "claro"); } catch (e) {}
+    if (avisar) enviarTema(dark);
+  }
+
+  lightBtn.addEventListener("click", () => setTema(false, true));
+  darkBtn.addEventListener("click", () => setTema(true, true));
+  try { setTema(localStorage.getItem("adminTema") === "oscuro", false); } catch (e) {}
+
+  // ---------- Paleta ----------
+  function pintarPaleta() {
+    coloresRow.innerHTML = "";
+    COLORES.forEach((c, i) => {
+      const b = document.createElement("div");
+      b.className = "cbtn" + (c === colorActual ? " sel" : "");
+      b.style.background = c;
+      b.title = NOMBRES[i];
+      b.addEventListener("click", () => { colorActual = c; pintarPaleta(); });
+      coloresRow.appendChild(b);
+    });
+  }
+  pintarPaleta();
+
+  function salirModoResaltar() {
+    if (!modoResaltar) return;
+    modoResaltar = false;
+    editVerseButton.classList.remove("resaltando");
+    editVerseButton.textContent = "🖍️ Resaltar";
+    preview.classList.remove("resaltando");
+  }
+
+  // ---------- Estimación local de partes (para previews) ----------
   function partirEstimado(words) {
     const total = words.reduce((a,w)=>a+w.t.length+1,0);
     if (total <= UMBRAL_EST || words.length < 2) return [[0, words.length]];
@@ -231,6 +300,7 @@
     curIdx = idx;
     curPart = Math.max(0, part || 0);
     partesInfo = null;
+    salirModoResaltar();
     const it = playlist[curIdx];
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
@@ -249,8 +319,9 @@
   }
 
   function actualizarPreview() {
-    if (curIdx < 0) { preview.style.display = "none"; return; }
+    if (curIdx < 0) { preview.style.display = "none"; editVerseButton.disabled = true; return; }
     preview.style.display = "flex";
+    preview.classList.toggle("resaltando", modoResaltar);
     const it = playlist[curIdx];
     const ranges = rangesDe(it);
     const nP = partesInfo ? partesInfo.count : ranges.length;
@@ -258,38 +329,43 @@
       (nP > 1 ? ` (parte ${curPart+1} de ${nP})` : "") +
       " — " + it.version;
 
-    // texto actual (normal o tocable en modo resaltar)
     if (modoResaltar) {
       curBox.classList.add("resaltando");
-      curText.innerHTML = it.words.map((w,i) =>
-        `<span class="palabra${w.h ? " resaltada" : ""}" data-w="${i}">${escapeHtml(w.t)}</span>`
-      ).join(" ");
+      curText.innerHTML = it.words.map((w,i) => {
+        const st = w.h ? ` style="background-color:${w.h}"` : "";
+        return `<span class="palabra${w.h ? " resaltada" : ""}" data-w="${i}"${st}>${escapeHtml(w.t)}</span>`;
+      }).join(" ");
     } else {
       curBox.classList.remove("resaltando");
       curText.textContent = textoParte(it, curPart);
     }
 
-    // ANTERIOR
-    if (curPart > 0) {
-      prevBox.classList.remove("hidden");
-      prevBox.innerHTML = `<div class="pref">${escapeHtml(it.referencia)} (parte ${curPart})</div><div class="ptext">${escapeHtml(textoParte(it, curPart-1))}</div>`;
-    } else if (curIdx > 0) {
-      const p = playlist[curIdx-1];
-      const t = textoParte(p, 0);
-      prevBox.classList.remove("hidden");
-      prevBox.innerHTML = `<div class="pref">${escapeHtml(p.referencia)}</div><div class="ptext">${escapeHtml(t.length>90 ? t.slice(0,90)+"…" : t)}</div>`;
-    } else prevBox.classList.add("hidden");
+    if (modoResaltar) {
+      prevBox.classList.add("hidden");
+      nextBox.classList.add("hidden");
+    } else {
+      if (curPart > 0) {
+        prevBox.classList.remove("hidden");
+        prevBox.innerHTML = `<div class="pref">${escapeHtml(it.referencia)} (parte ${curPart})</div><div class="ptext">${escapeHtml(textoParte(it, curPart-1))}</div>`;
+      } else if (curIdx > 0) {
+        const p = playlist[curIdx-1];
+        const t = textoParte(p, 0);
+        prevBox.classList.remove("hidden");
+        prevBox.innerHTML = `<div class="pref">${escapeHtml(p.referencia)}</div><div class="ptext">${escapeHtml(t.length>90 ? t.slice(0,90)+"…" : t)}</div>`;
+      } else prevBox.classList.add("hidden");
 
-    // SIGUIENTE
-    if (curPart < nP - 1) {
-      nextBox.classList.remove("hidden");
-      nextBox.innerHTML = `<div class="pref">${escapeHtml(it.referencia)} (parte ${curPart+2})</div><div class="ptext">${escapeHtml(textoParte(it, curPart+1))}</div>`;
-    } else if (curIdx < playlist.length-1) {
-      const n = playlist[curIdx+1];
-      const t = textoParte(n, 0);
-      nextBox.classList.remove("hidden");
-      nextBox.innerHTML = `<div class="pref">${escapeHtml(n.referencia)}</div><div class="ptext">${escapeHtml(t.length>90 ? t.slice(0,90)+"…" : t)}</div>`;
-    } else nextBox.classList.add("hidden");
+      if (curPart < nP - 1) {
+        nextBox.classList.remove("hidden");
+        nextBox.innerHTML = `<div class="pref">${escapeHtml(it.referencia)} (parte ${curPart+2})</div><div class="ptext">${escapeHtml(textoParte(it, curPart+1))}</div>`;
+      } else if (curIdx < playlist.length-1) {
+        const n = playlist[curIdx+1];
+        const t = textoParte(n, 0);
+        nextBox.classList.remove("hidden");
+        nextBox.innerHTML = `<div class="pref">${escapeHtml(n.referencia)}</div><div class="ptext">${escapeHtml(t.length>90 ? t.slice(0,90)+"…" : t)}</div>`;
+      } else nextBox.classList.add("hidden");
+    }
+
+    editVerseButton.disabled = false;
   }
 
   prevBox.addEventListener("click", () => {
@@ -304,16 +380,24 @@
     else if (curIdx < playlist.length - 1) proyectar(curIdx + 1, 0);
   });
 
-  // ---------- Resaltar tocando el propio versículo proyectado ----------
+  // ---------- Resaltar ----------
   editVerseButton.addEventListener("click", () => {
     if (curIdx < 0) return;
     modoResaltar = !modoResaltar;
     editVerseButton.classList.toggle("resaltando", modoResaltar);
     editVerseButton.textContent = modoResaltar ? "✕ Terminar resaltado" : "🖍️ Resaltar";
+    const it = playlist[curIdx];
     if (modoResaltar) {
-      playlist[curIdx].words = playlist[curIdx].words.map(w => ({ t: w.t, h: 0 })); // arranca limpio
-    } else {
-      proyectar(curIdx, curPart); // vuelve limpio
+      it.words = it.words.map(w => ({ t: w.t, h: "" }));
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: "project",
+          reference: it.referencia,
+          data: { type: "verse", words: it.words, part: curPart,
+                  version: it.version, bookName: it.bookName,
+                  chapter: it.chapter, verse: it.verse }
+        }));
+      }
     }
     actualizarPreview();
   });
@@ -323,8 +407,16 @@
     const sp = e.target.closest(".palabra");
     if (!sp) return;
     const i = Number(sp.dataset.w);
-    playlist[curIdx].words[i].h = playlist[curIdx].words[i].h ? 0 : 1;
-    sp.classList.toggle("resaltada");
+    const w = playlist[curIdx].words[i];
+    if (w.h) {
+      w.h = "";
+      sp.classList.remove("resaltada");
+      sp.style.backgroundColor = "";
+    } else {
+      w.h = colorActual;
+      sp.classList.add("resaltada");
+      sp.style.backgroundColor = colorActual;
+    }
     const it = playlist[curIdx];
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
@@ -357,11 +449,27 @@
       el.classList.toggle("selected", Number(el.dataset.i) === curIdx);
     });
     document.querySelectorAll("#verseGrid .numcell").forEach(el => {
-      el.classList.toggle("selected", curIdx >= 0 && Number(el.dataset.v) === playlist[curIdx].verse);
+      el.classList.toggle("selected", curIdx >= 0 && playlist[curIdx] && Number(el.dataset.v) === playlist[curIdx].verse);
     });
     const sel = document.querySelector(".verse.selected");
     if (sel) sel.scrollIntoView({ block: "nearest" });
   }
+
+  // ---------- Cuadrícula / lista (botón de 3 puntitos) ----------
+  function verLista() {
+    verseList.style.display = "block";
+    verseGrid.style.display = "none";
+    dotsButton.textContent = "🔲 Cuadrícula";
+    marcarSeleccion();
+  }
+  function verGrilla() {
+    verseList.style.display = "none";
+    verseGrid.style.display = "grid";
+    dotsButton.textContent = "⋮ Lista";
+  }
+  dotsButton.addEventListener("click", () => {
+    (verseList.style.display === "none") ? verLista() : verGrilla();
+  });
 
   // ---------- Tabs ----------
   function activarTab(name) {
@@ -429,9 +537,10 @@
       version: versionSelect.value,
       bookName: selectedBookName, bookNumber: currentBookNumber,
       chapter: c, verse: v.verse,
-      words: String(v.text).replace(/\s+/g," ").trim().split(" ").filter(Boolean).map(t => ({ t: t, h: 0 }))
+      words: String(v.text).replace(/\s+/g," ").trim().split(" ").filter(Boolean).map(t => ({ t: t, h: "" }))
     }));
     partesInfo = null;
+    verGrilla(); // cada capítulo arranca en cuadrícula
 
     const maxV = Math.max(...verses.map(v => v.verse));
     verseGrid.innerHTML = "";
@@ -443,8 +552,7 @@
       cellv.addEventListener("click", () => {
         const idx = playlist.findIndex(it => it.verse === n);
         if (idx < 0) return;
-        proyectar(idx, 0);
-        verLista();
+        proyectar(idx, 0); // NO cambia de vista: sigue en la cuadrícula
       });
       verseGrid.appendChild(cellv);
     }
@@ -452,21 +560,6 @@
     tabEstado("versiculo", true);
     activarTab("versiculo");
   }
-
-  function verLista() {
-    verseList.style.display = "block";
-    verseGrid.style.display = "none";
-    listToggle.textContent = "🔲 Ver cuadrícula";
-    marcarSeleccion();
-  }
-  function verGrilla() {
-    verseList.style.display = "none";
-    verseGrid.style.display = "grid";
-    listToggle.textContent = "📄 Ver lista de versículos";
-  }
-  listToggle.addEventListener("click", () => {
-    (verseList.style.display === "none") ? verLista() : verGrilla();
-  });
 
   // ---------- Buscador ----------
   async function hacerBusqueda() {
@@ -486,7 +579,7 @@
       version: versionSelect.value,
       bookName: item.book_name, bookNumber: item.book_number,
       chapter: item.chapter, verse: item.verse,
-      words: String(item.text).replace(/\s+/g," ").trim().split(" ").filter(Boolean).map(t => ({ t: t, h: 0 }))
+      words: String(item.text).replace(/\s+/g," ").trim().split(" ").filter(Boolean).map(t => ({ t: t, h: "" }))
     }));
     partesInfo = null; qBusqueda = q;
 
@@ -511,9 +604,7 @@
   clearButton.addEventListener("click", () => {
     playlist = []; curIdx = -1; curPart = 0; partesInfo = null;
     selectedBookName = ""; currentBookNumber = null;
-    modoResaltar = false;
-    editVerseButton.classList.remove("resaltando");
-    editVerseButton.textContent = "🖍️ Resaltar";
+    salirModoResaltar();
     preview.style.display = "none";
     editVerseButton.disabled = true;
     bookList.innerHTML = '<div class="book-row" style="color:#999;">Elija una versión…</div>';
