@@ -11,7 +11,7 @@
   header h1 { margin: 0; font-size: 26px; }
   header p { margin: 5px 0 0; opacity: 0.85; }
   main { max-width: 1100px; margin: 25px auto; padding: 0 18px; }
-  .panel { background: white; border-radius: 14px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+  .panel { background: white; border-radius: 14px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
   .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
   label { display: block; font-weight: bold; margin-bottom: 6px; }
   select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; background: white; }
@@ -25,21 +25,19 @@
   .verse-text { line-height: 1.5; }
   .actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
   button { border: none; border-radius: 9px; padding: 14px 22px; font-size: 17px; font-weight: bold; cursor: pointer; }
-  #projectButton { background: #173f35; color: white; flex: 1; }
-  #projectButton:disabled { background: #aaa; cursor: not-allowed; }
-  #editVerseButton { background: #b45309; color: white; }
+  #editVerseButton { background: #b45309; color: white; flex: 1; }
   #editVerseButton:disabled { background: #ccc; cursor: not-allowed; }
+  #partButton { background: #173f35; color: white; display: none; }
   #clearButton { background: #ddd; color: #222; }
-  .free-text-panel { margin-top: 20px; padding: 18px; border: 1px solid #ddd; border-radius: 12px; background: #fafafa; }
-  .free-text-panel > label { display: block; margin-bottom: 8px; font-weight: bold; color: #173f35; }
+  .free-text-panel { margin-top: 20px; padding: 18px; border: 1px solid #ddd; border-radius: 12px; background: #fafafa; display: none; }
+  .free-text-panel.visible { display: block; }
+  .free-text-panel > label { display: block; margin-bottom: 8px; font-weight: bold; color: #b45309; }
   .quote-editor {
     width: 100%; min-height: 140px; max-height: 340px; overflow-y: auto;
     box-sizing: border-box; padding: 14px; border: 1px solid #ccc; border-radius: 9px;
-    background: white; resize: vertical; font-family: Arial, sans-serif;
-    font-size: 19px; line-height: 1.8; outline: none;
+    background: white; font-family: Arial, sans-serif;
+    font-size: 19px; line-height: 1.9; outline: none; user-select: none;
   }
-  .quote-editor:focus { border-color: #173f35; box-shadow: 0 0 0 2px rgba(23,63,53,0.12); }
-  .quote-editor:empty::before { content: attr(data-placeholder); color: #888; pointer-events: none; }
   .palabra { cursor: pointer; border-radius: 3px; }
   .palabra.resaltada { background-color: #ffff00; }
   .modo-edicion {
@@ -48,9 +46,6 @@
     font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
   }
   .modo-edicion button { background: none; color: #7a5c00; padding: 6px 10px; font-size: 14px; text-decoration: underline; }
-  .free-text-actions { display: flex; gap: 10px; margin-top: 12px; }
-  #projectTextButton { background: #173f35; color: white; flex: 1; }
-  #clearTextButton { background: #ddd; color: #222; }
   .status { margin-top: 15px; padding: 10px; border-radius: 8px; background: #f1f1f1; }
   @media (max-width: 700px) {
     .grid { grid-template-columns: 1fr; }
@@ -87,22 +82,17 @@
     </div>
 
     <div class="actions">
-      <button id="projectButton" disabled>📖 PROYECTAR</button>
-      <button id="editVerseButton" disabled title="Carga el versículo partido en palabras para resaltar tocando">🖍️ Editar y resaltar</button>
+      <button id="editVerseButton" disabled>🖍️ Resaltar palabras</button>
+      <button id="partButton">▶️ Parte 2</button>
       <button id="clearButton">Limpiar</button>
     </div>
 
-    <div class="free-text-panel">
-      <label>📝 Editor — para resaltar, tocá «Editar y resaltar» y luego tocá las palabras</label>
-      <div id="freeText" class="quote-editor" contenteditable="true"
-           data-placeholder="Aquí aparecerá el versículo partido en palabras, o escribí una cita..."></div>
-      <div class="modo-edicion" id="modoEdicion" style="display:none;">
+    <div class="free-text-panel" id="panelResaltar">
+      <label>🖍️ TOCÁ LAS PALABRAS QUE QUERÉS RESALTAR — se proyectan al instante</label>
+      <div id="freeText" class="quote-editor"></div>
+      <div class="modo-edicion">
         <span id="modoTexto"></span>
-        <button type="button" id="salirEdicion">✕ salir</button>
-      </div>
-      <div class="free-text-actions">
-        <button id="projectTextButton">📖 PROYECTAR</button>
-        <button id="clearTextButton">Borrar texto</button>
+        <button type="button" id="salirEdicion">✕ Terminar y volver al versículo limpio</button>
       </div>
     </div>
 
@@ -119,13 +109,11 @@
   const chapterSelect = document.getElementById("chapter");
   const versesContainer = document.getElementById("verses");
   const referenceElement = document.getElementById("reference");
-  const projectButton = document.getElementById("projectButton");
   const clearButton = document.getElementById("clearButton");
   const editVerseButton = document.getElementById("editVerseButton");
+  const partButton = document.getElementById("partButton");
   const freeText = document.getElementById("freeText");
-  const projectTextButton = document.getElementById("projectTextButton");
-  const clearTextButton = document.getElementById("clearTextButton");
-  const modoEdicion = document.getElementById("modoEdicion");
+  const panelResaltar = document.getElementById("panelResaltar");
   const modoTexto = document.getElementById("modoTexto");
   const salirEdicion = document.getElementById("salirEdicion");
   const wsStatus = document.getElementById("wsStatus");
@@ -136,6 +124,7 @@
   let selectedVerse = null;
   let selectedBookName = "";
   let versiculoEnEdicion = null;
+  let parteRemota = 1;
 
   function escapeHtml(text) {
     return String(text)
@@ -152,7 +141,23 @@
     ws.addEventListener("message", (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === "connected") connectedCount.textContent = data.count;
+        if (data.type === "connected") {
+          connectedCount.textContent = data.count;
+        } else if (data.type === "projection") {
+          const d = data.data || {};
+          if (d.type === "parts-info") {
+            // La pantalla informa si el versículo se cortó en 2 partes
+            if (d.count > 1) {
+              parteRemota = d.current || 1;
+              partButton.style.display = "";
+              partButton.textContent = parteRemota === 1 ? "▶️  Parte 2" : "◀️  Parte 1";
+            } else {
+              partButton.style.display = "none";
+            }
+          } else if (d.type === "verse" || d.type === "freeText") {
+            partButton.style.display = "none";
+          }
+        }
       } catch (error) { console.error(error); }
     });
   }
@@ -216,8 +221,8 @@
     versesContainer.innerHTML = '<div style="padding:20px;color:#777;">Cargando...</div>';
     currentVerses = [];
     selectedVerse = null;
-    projectButton.disabled = true;
     editVerseButton.disabled = true;
+    salirModoPalabras(false);
     if (!chapter) return;
     const response = await fetch(`./api/verses?version=${encodeURIComponent(version)}&book=${book}&chapter=${chapter}`);
     currentVerses = await response.json();
@@ -238,8 +243,8 @@
         document.querySelectorAll(".verse").forEach(element => element.classList.remove("selected"));
         div.classList.add("selected");
         selectedVerse = item.verse;
-        projectButton.disabled = false;
         editVerseButton.disabled = false;
+        salirModoPalabras(false); // limpia el resaltado anterior
         actualizarReferencia();
         proyectar();
       });
@@ -255,51 +260,68 @@
     referenceElement.textContent = `${selectedBookName} ${chapterSelect.value}:${selectedVerse} — ${versionSelect.value}`;
   }
 
+  // Proyecta el versículo limpio (palabras sin resaltar)
   function proyectar() {
     if (!ws || ws.readyState !== WebSocket.OPEN || !selectedVerse) return;
     const verse = currentVerses.find(item => Number(item.verse) === Number(selectedVerse));
     if (!verse) return;
+    const words = String(verse.text).replace(/\s+/g, " ").trim().split(" ")
+      .filter(Boolean).map(t => ({ t: t, h: 0 }));
     ws.send(JSON.stringify({
       type: "project",
       reference: `${selectedBookName} ${chapterSelect.value}:${verse.verse}`,
       data: {
+        type: "verse",
+        words: words,
         version: versionSelect.value,
-        bookNumber: Number(bookSelect.value),
         bookName: selectedBookName,
         chapter: Number(chapterSelect.value),
-        verse: Number(verse.verse),
-        text: verse.text
+        verse: Number(verse.verse)
       }
     }));
   }
 
-  // ---- MODO RESALTAR: tocar palabra por palabra ----
+  // ---- MODO RESALTAR: tocar palabra = resaltar + proyectar al instante ----
   function activarModoPalabras(textoPlano, info) {
     const palabras = String(textoPlano).replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
     freeText.innerHTML = palabras.map(p => `<span class="palabra">${escapeHtml(p)}</span>`).join(" ");
-    freeText.dataset.modo = "palabras";
     versiculoEnEdicion = info || null;
-    modoTexto.textContent = info
-      ? "🖍️ Tocá las palabras para resaltarlas: " + info.referencia
-      : "🖍️ Tocá las palabras para resaltarlas (cita)";
-    modoEdicion.style.display = "flex";
+    modoTexto.textContent = "Resaltando: " + info.referencia;
+    panelResaltar.classList.add("visible");
+    freeText.scrollTop = 0;
+  }
+
+  function salirModoPalabras(reproyectarLimpio) {
+    freeText.innerHTML = "";
+    versiculoEnEdicion = null;
+    panelResaltar.classList.remove("visible");
+    if (reproyectarLimpio && selectedVerse) proyectar();
   }
 
   freeText.addEventListener("click", (e) => {
-    if (freeText.dataset.modo !== "palabras") return;
-    if (e.target.classList && e.target.classList.contains("palabra")) {
-      e.target.classList.toggle("resaltada");
-    }
+    if (!e.target.classList || !e.target.classList.contains("palabra")) return;
+    e.target.classList.toggle("resaltada");
+    autoProyectar();
   });
 
-  function salirModoPalabras() {
-    freeText.innerHTML = "";
-    delete freeText.dataset.modo;
-    versiculoEnEdicion = null;
-    modoEdicion.style.display = "none";
+  function autoProyectar() {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !versiculoEnEdicion) return;
+    const words = Array.from(freeText.querySelectorAll("span.palabra"))
+      .map(s => ({ t: s.textContent, h: s.classList.contains("resaltada") ? 1 : 0 }));
+    if (!words.length) return;
+    ws.send(JSON.stringify({
+      type: "project",
+      reference: versiculoEnEdicion.referencia,
+      data: {
+        type: "verse",
+        words: words,
+        version: versiculoEnEdicion.version,
+        bookName: versiculoEnEdicion.bookName,
+        chapter: versiculoEnEdicion.chapter,
+        verse: versiculoEnEdicion.verse
+      }
+    }));
   }
-
-  salirEdicion.addEventListener("click", salirModoPalabras);
 
   editVerseButton.addEventListener("click", () => {
     const verse = currentVerses.find(item => Number(item.verse) === Number(selectedVerse));
@@ -311,60 +333,19 @@
       verse: Number(verse.verse),
       version: versionSelect.value
     });
-    freeText.scrollTop = 0;
   });
 
-  function htmlDesdePalabras() {
-    const spans = freeText.querySelectorAll("span.palabra");
-    return Array.from(spans)
-      .map(s => s.classList.contains("resaltada") ? "<mark>" + escapeHtml(s.textContent) + "</mark>" : escapeHtml(s.textContent))
-      .join(" ");
-  }
+  salirEdicion.addEventListener("click", () => salirModoPalabras(true));
 
-  function proyectarTexto() {
+  // Botón Parte 1 / Parte 2 (aparece solo si el versículo se cortó)
+  partButton.addEventListener("click", () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
-    if (freeText.dataset.modo === "palabras") {
-      const html = htmlDesdePalabras();
-      if (!html) return;
-      if (versiculoEnEdicion) {
-        ws.send(JSON.stringify({
-          type: "project",
-          reference: versiculoEnEdicion.referencia,
-          data: {
-            type: "verse-html",
-            html: html,
-            bookName: versiculoEnEdicion.bookName,
-            chapter: versiculoEnEdicion.chapter,
-            verse: versiculoEnEdicion.verse,
-            version: versiculoEnEdicion.version
-          }
-        }));
-      } else {
-        ws.send(JSON.stringify({ type: "project", reference: "Cita", data: { type: "freeText", html: html } }));
-      }
-      return;
-    }
-
-    const contenido = freeText.innerHTML.trim();
-    if (!contenido) return;
-    if (versiculoEnEdicion) {
-      ws.send(JSON.stringify({
-        type: "project",
-        reference: versiculoEnEdicion.referencia,
-        data: {
-          type: "verse-html",
-          html: contenido,
-          bookName: versiculoEnEdicion.bookName,
-          chapter: versiculoEnEdicion.chapter,
-          verse: versiculoEnEdicion.verse,
-          version: versiculoEnEdicion.version
-        }
-      }));
-    } else {
-      ws.send(JSON.stringify({ type: "project", reference: "Cita", data: { type: "freeText", html: contenido } }));
-    }
-  }
+    ws.send(JSON.stringify({
+      type: "project",
+      reference: "",
+      data: { type: "goto-part", part: parteRemota === 1 ? 2 : 1 }
+    }));
+  });
 
   function limpiar() {
     versionSelect.value = "";
@@ -376,18 +357,14 @@
     referenceElement.textContent = "Seleccione una referencia";
     selectedVerse = null;
     currentVerses = [];
-    projectButton.disabled = true;
     editVerseButton.disabled = true;
-    salirModoPalabras();
+    salirModoPalabras(false);
   }
 
   versionSelect.addEventListener("change", cargarLibros);
   bookSelect.addEventListener("change", cargarCapitulos);
   chapterSelect.addEventListener("change", cargarVersiculos);
-  projectButton.addEventListener("click", proyectar);
   clearButton.addEventListener("click", limpiar);
-  projectTextButton.addEventListener("click", proyectarTexto);
-  clearTextButton.addEventListener("click", () => { salirModoPalabras(); freeText.focus(); });
 
   cargarVersiones();
   connectWebSocket();
