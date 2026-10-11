@@ -22,7 +22,6 @@
   .search-info { display:none; padding:8px 12px; background:#eef4f1; color:#173f35; font-weight:bold; font-size:14px; justify-content:space-between; align-items:center; }
   .search-info button { background:none; border:none; color:#173f35; text-decoration:underline; font-weight:bold; cursor:pointer; }
 
-  /* En modo resaltar: solo se ve el versículo grande */
   body.resaltando .tabs, body.resaltando main { display:none; }
 
   .preview { padding:10px 12px; display:none; flex-direction:column; gap:8px; }
@@ -55,16 +54,43 @@
   .tab.active { color:#173f35; border-bottom-color:#173f35; }
   .tab.disabled { color:#ccc; pointer-events:none; }
 
-  main { max-width:900px; margin:0 auto; }
+  main { max-width:1000px; margin:0 auto; }
   .tabpage { display:none; padding:10px 12px 90px; }
   .tabpage.active { display:block; }
 
+  /* ===== LIBROS: cuadrícula con secciones de colores ===== */
+  .btoolbar { display:flex; justify-content:flex-end; margin-bottom:6px; }
+  .mini-btn { border:none; border-radius:9px; background:#173f35; color:#fff; font-size:14px; font-weight:bold; padding:8px 14px; cursor:pointer; }
+  .legend { display:flex; flex-wrap:wrap; gap:5px 14px; padding:2px 2px 10px; font-size:11px; color:#555; }
+  .legend span { display:flex; align-items:center; gap:4px; }
+  .legend i { width:11px; height:11px; border-radius:3px; display:inline-block; }
+  .chipstrip { display:none; gap:6px; overflow-x:auto; padding:4px 2px 8px; }
+  .chipstrip.has { display:flex; }
+  .chiplabel { flex:0 0 auto; font-size:11px; color:#777; align-self:center; padding-right:2px; font-weight:bold; }
+  .chip { flex:0 0 auto; border-radius:8px; padding:8px 11px; color:#fff; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .bgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(64px, 1fr)); gap:6px; }
+  .bcell { position:relative; border-radius:10px; padding:15px 2px; text-align:center; color:#fff;
+           font-weight:bold; font-size:16px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.28);
+           font-family:'Montserrat', Arial, sans-serif; user-select:none; }
+  .bcell:hover { filter:brightness(1.12); }
+  .bcell .bknum { position:absolute; top:3px; left:6px; font-size:9px; opacity:.5; font-family:Arial; }
+  .bcell .bkfull { display:none; font-size:9px; font-weight:normal; opacity:.9; font-family:Arial; margin-top:1px; }
+  .bcell .star { position:absolute; top:2px; right:5px; font-size:11px; color:#ffe27a; text-shadow:0 1px 2px rgba(0,0,0,.5); display:none; }
+  .bcell.fav .star { display:block; }
+  .bcell.selected { outline:3px solid #173f35; outline-offset:2px; }
+  @media (min-width: 720px) {
+    .bgrid { grid-template-columns:repeat(13, 1fr); }
+    .bcell { padding:10px 2px; }
+    .bcell .bkfull { display:block; }
+  }
+  .hint { font-size:11px; color:#888; padding:8px 2px; }
+
   .book-row { padding:16px 14px; border-bottom:1px solid #e5e5e5; font-size:21px; color:#173f35; cursor:pointer; background:#fff; }
   .book-row:hover { background:#f0f5f2; }
+  #bookList { display:none; }
+  #bookList.visible { display:block; border:1px solid #ddd; border-radius:10px; overflow:hidden; }
 
   .vtoolbar { display:flex; justify-content:flex-end; margin-bottom:8px; }
-  .mini-btn { border:none; border-radius:9px; background:#173f35; color:#fff; font-size:15px; font-weight:bold; padding:9px 16px; cursor:pointer; }
-
   .grid-num { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
   .numcell { background:#e3ece7; color:#173f35; font-weight:bold; font-size:20px; text-align:center; padding:16px 0; border-radius:6px; cursor:pointer; }
   .numcell:hover { background:#d3e2db; }
@@ -79,7 +105,7 @@
   .vtext { font-size:19px; line-height:1.5; }
   .vtext mark { background:#ffe27a; padding:0 2px; border-radius:3px; }
 
-  .actions { display:flex; gap:10px; padding:12px; position:fixed; bottom:0; left:0; right:0; max-width:900px; margin:0 auto; background:rgba(244,241,234,0.97); border-top:1px solid #ddd; z-index:6; }
+  .actions { display:flex; gap:10px; padding:12px; position:fixed; bottom:0; left:0; right:0; max-width:1000px; margin:0 auto; background:rgba(244,241,234,0.97); border-top:1px solid #ddd; z-index:6; }
   .actions button { border:none; border-radius:9px; padding:12px 18px; font-size:16px; font-weight:bold; cursor:pointer; }
   #editVerseButton { background:#b45309; color:#fff; flex:1; }
   #editVerseButton.resaltando { background:#7a5c00; }
@@ -95,7 +121,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v12 · <span id="connectedCount">0</span> conect.</span>
+  <span>v13 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -127,7 +153,15 @@
 
 <main>
   <section class="tabpage active" id="page-libro">
-    <div id="bookList"><div class="book-row" style="color:#999;">Elija una versión…</div></div>
+    <div class="btoolbar">
+      <button id="bookViewBtn" class="mini-btn">📋 Lista</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="chipstrip" id="favStrip"></div>
+    <div class="chipstrip" id="histStrip"></div>
+    <div class="bgrid" id="bookGrid"></div>
+    <div class="hint">Tocá un libro para ver sus capítulos · Mantené presionado (o clic derecho) para ⭐ favorito</div>
+    <div id="bookList"></div>
   </section>
   <section class="tabpage" id="page-capitulo">
     <div class="grid-num" id="chapterGrid"></div>
@@ -155,7 +189,11 @@
 
 <script>
   const versionSelect = document.getElementById("version");
+  const bookGrid = document.getElementById("bookGrid");
   const bookList = document.getElementById("bookList");
+  const bookViewBtn = document.getElementById("bookViewBtn");
+  const favStrip = document.getElementById("favStrip");
+  const histStrip = document.getElementById("histStrip");
   const chapterGrid = document.getElementById("chapterGrid");
   const verseGrid = document.getElementById("verseGrid");
   const verseList = document.getElementById("verseList");
@@ -185,6 +223,24 @@
   const NOMBRES = ["Amarillo", "Verde", "Celeste", "Rosa", "Naranja"];
   let colorActual = COLORES[0];
 
+  // ===== SECCIONES Y ABREVIATURAS DE LOS 66 LIBROS =====
+  const SECCIONES = [
+    { name:"Ley",               color:"#b35c1e", from:1,  to:5  },
+    { name:"Historia",          color:"#d68438", from:6,  to:17 },
+    { name:"Poéticos",          color:"#2f8f46", from:18, to:22 },
+    { name:"Profetas Mayores",  color:"#7b4bab", from:23, to:27 },
+    { name:"Profetas Menores",  color:"#4f7ecb", from:28, to:39 },
+    { name:"Evangelios",        color:"#c0392b", from:40, to:43 },
+    { name:"Hechos",            color:"#d16a9e", from:44, to:44 },
+    { name:"Cartas de Pablo",   color:"#4557c0", from:45, to:57 },
+    { name:"Cartas Generales",  color:"#2a9d8f", from:58, to:65 },
+    { name:"Apocalipsis",       color:"#8e44ad", from:66, to:66 }
+  ];
+  const ABBR = ["Gn","Ex","Lv","Nm","Dt","Js","Jz","Rt","1S","2S","1R","2R","1Cr","2Cr","Esd","Neh","Est","Job","Sal","Pr","Ec","Ct","Is","Jr","Lm","Ez","Dn","Os","Jl","Am","Ob","Jon","Mi","Nah","Hab","Sof","Hag","Zac","Mal","Mt","Mr","Lc","Jn","Hch","Ro","1Co","2Co","Gá","Ef","Fil","Col","1Ts","2Ts","1Ti","2Ti","Tit","Flm","Heb","Stg","1P","2P","1Jn","2Jn","3Jn","Jud","Ap"];
+  function seccionDe(n) {
+    return SECCIONES.find(s => n >= s.from && n <= s.to) || { name:"Libro", color:"#607d8b" };
+  }
+
   let ws = null;
   let playlist = [];
   let curIdx = -1;
@@ -196,6 +252,11 @@
   let modoResaltar = false;
   let qBusqueda = "";
   let temaOscuro = false;
+  let booksByNumber = {};
+  let favoritos = [];
+  let historial = [];
+  try { favoritos = JSON.parse(localStorage.getItem("bibFav") || "[]"); } catch(e) { favoritos = []; }
+  try { historial = JSON.parse(localStorage.getItem("bibHist") || "[]"); } catch(e) { historial = []; }
 
   function escapeHtml(t) {
     return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -238,14 +299,12 @@
       ws.send(JSON.stringify({ type: "project", reference: "", data: { type: "theme", dark: dark } }));
     }
   }
-
   function setTema(dark, avisar) {
     temaOscuro = dark;
     curBox.classList.toggle("dark", dark);
     try { localStorage.setItem("adminTema", dark ? "oscuro" : "claro"); } catch (e) {}
     if (avisar) enviarTema(dark);
   }
-
   lightBtn.addEventListener("click", () => setTema(false, true));
   darkBtn.addEventListener("click", () => setTema(true, true));
   try { setTema(localStorage.getItem("adminTema") === "oscuro", false); } catch (e) {}
@@ -270,10 +329,10 @@
     editVerseButton.classList.remove("resaltando");
     editVerseButton.textContent = "🖍️ Resaltar";
     preview.classList.remove("resaltando");
-    document.body.classList.remove("resaltando"); // vuelven las pestañas y listas
+    document.body.classList.remove("resaltando");
   }
 
-  // ---------- Estimación local de partes (para previews) ----------
+  // ---------- Partes ----------
   function partirEstimado(words) {
     const total = words.reduce((a,w)=>a+w.t.length+1,0);
     if (total <= UMBRAL_EST || words.length < 2) return [[0, words.length]];
@@ -389,7 +448,6 @@
     editVerseButton.textContent = modoResaltar ? "✕ Terminar resaltado" : "🖍️ Resaltar";
     const it = playlist[curIdx];
     if (modoResaltar) {
-      // Oculta pestañas/listas y sube a la vista el versículo grande
       document.body.classList.add("resaltando");
       window.scrollTo(0, 0);
       it.words = it.words.map(w => ({ t: w.t, h: "" }));
@@ -433,63 +491,66 @@
     }
   });
 
-  // ---------- Listas ----------
-  function pintarLista(container, marcarQ) {
-    container.innerHTML = "";
-    playlist.forEach((it, i) => {
-      const div = document.createElement("div");
-      div.className = "verse";
-      div.dataset.i = i;
-      div.innerHTML = `
-        <div class="vnum">${it.verse}</div>
-        <div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
-      div.addEventListener("click", () => {
-        proyectar(i, 0);
-        window.scrollTo(0, 0); // sube para ver el versículo grande proyectarse
-      });
-      container.appendChild(div);
+  // ================= LIBROS: cuadrícula, favoritos e historia =================
+  function guardarFavHist() {
+    try {
+      localStorage.setItem("bibFav", JSON.stringify(favoritos));
+      localStorage.setItem("bibHist", JSON.stringify(historial));
+    } catch(e) {}
+  }
+  function pintarChip(strip, label, lista, alTocar) {
+    strip.innerHTML = "";
+    if (!lista.length) { strip.classList.remove("has"); return; }
+    strip.classList.add("has");
+    const l = document.createElement("span");
+    l.className = "chiplabel";
+    l.textContent = label;
+    strip.appendChild(l);
+    lista.forEach(bk => {
+      const c = document.createElement("div");
+      c.className = "chip";
+      const s = seccionDe(bk.n);
+      c.style.background = s.color;
+      c.textContent = bk.n >= 1 && bk.n <= 66 ? ABBR[bk.n-1] : bk.name;
+      c.title = bk.name;
+      c.addEventListener("click", () => alTocar(bk));
+      strip.appendChild(c);
     });
   }
+  function pintarFranjas() {
+    pintarChip(favStrip, "★", favoritos, (bk) => abrirLibro(bk.n, bk.name));
+    pintarChip(histStrip, "🕘", historial, (bk) => abrirLibro(bk.n, bk.name));
+  }
+  function toggleFavorito(n, name) {
+    const i = favoritos.findIndex(f => f.n === n);
+    if (i >= 0) favoritos.splice(i, 1);
+    else favoritos.unshift({ n: n, name: name });
+    if (favoritos.length > 10) favoritos.pop();
+    guardarFavHist(); pintarFranjas();
+    document.querySelectorAll(`.bcell[data-bn="${n}"]`).forEach(c => c.classList.toggle("fav", favoritos.some(f => f.n === n)));
+  }
+  function agregarHistorial(n, name) {
+    historial = historial.filter(h => h.n !== n);
+    historial.unshift({ n: n, name: name });
+    if (historial.length > 6) historial.pop();
+    guardarFavHist(); pintarFranjas();
+  }
 
-  function marcarSeleccion() {
-    document.querySelectorAll(".verse").forEach(el => {
-      el.classList.toggle("selected", Number(el.dataset.i) === curIdx);
+  function pintarLeyenda() {
+    const leg = document.getElementById("legend");
+    leg.innerHTML = "";
+    SECCIONES.forEach(s => {
+      const sp = document.createElement("span");
+      sp.innerHTML = `<i style="background:${s.color}"></i>${s.name}`;
+      leg.appendChild(sp);
     });
-    document.querySelectorAll("#verseGrid .numcell").forEach(el => {
-      el.classList.toggle("selected", curIdx >= 0 && playlist[curIdx] && Number(el.dataset.v) === playlist[curIdx].verse);
-    });
-    const sel = document.querySelector(".verse.selected");
-    if (sel) sel.scrollIntoView({ block: "nearest" });
+  }
+  pintarLeyenda();
+
+  function abrirLibro(num, name) {
+    elegirLibro({ book_number: num, book_name: name });
   }
 
-  // ---------- Cuadrícula / lista (3 puntitos) ----------
-  function verLista() {
-    verseList.style.display = "block";
-    verseGrid.style.display = "none";
-    dotsButton.textContent = "🔲 Cuadrícula";
-    marcarSeleccion();
-  }
-  function verGrilla() {
-    verseList.style.display = "none";
-    verseGrid.style.display = "grid";
-    dotsButton.textContent = "⋮ Lista";
-  }
-  dotsButton.addEventListener("click", () => {
-    (verseList.style.display === "none") ? verLista() : verGrilla();
-  });
-
-  // ---------- Tabs ----------
-  function activarTab(name) {
-    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
-    document.querySelectorAll(".tabpage").forEach(p => p.classList.toggle("active", p.id === "page-" + name));
-    if (name !== "busqueda") ultimoTab = name;
-  }
-  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => activarTab(t.dataset.tab)));
-  function tabEstado(name, habilitado) {
-    document.querySelector(`.tab[data-tab="${name}"]`).classList.toggle("disabled", !habilitado);
-  }
-
-  // ---------- Navegación ----------
   async function cargarVersiones() {
     const r = await fetch("./api/versions");
     const vs = await r.json();
@@ -502,22 +563,55 @@
   }
 
   async function cargarLibros() {
-    bookList.innerHTML = '<div class="book-row" style="color:#999;">Cargando…</div>';
     const r = await fetch("./api/books?version=" + encodeURIComponent(versionSelect.value));
     const books = await r.json();
+    booksByNumber = {};
+    books.forEach(b => { booksByNumber[b.book_number] = b.book_name; });
+
+    // Cuadrícula de colores
+    bookGrid.innerHTML = "";
+    books.forEach(b => {
+      const s = seccionDe(b.book_number);
+      const d = document.createElement("div");
+      d.className = "bcell" + (favoritos.some(f => f.n === b.book_number) ? " fav" : "");
+      d.dataset.bn = b.book_number;
+      d.style.background = s.color;
+      d.title = b.book_name + " — " + s.name;
+      const abbr = (b.book_number >= 1 && b.book_number <= 66) ? ABBR[b.book_number-1] : b.book_name.slice(0,3);
+      d.innerHTML = `<span class="bknum">${b.book_number}</span>${escapeHtml(abbr)}<span class="bkfull">${escapeHtml(b.book_name)}</span><span class="star">★</span>`;
+      let pressTimer = null, longPress = false;
+      d.addEventListener("touchstart", () => {
+        longPress = false;
+        pressTimer = setTimeout(() => { longPress = true; toggleFavorito(b.book_number, b.book_name); }, 550);
+      }, { passive: true });
+      d.addEventListener("touchend", () => clearTimeout(pressTimer));
+      d.addEventListener("touchmove", () => clearTimeout(pressTimer));
+      d.addEventListener("contextmenu", (e) => { e.preventDefault(); toggleFavorito(b.book_number, b.book_name); });
+      d.addEventListener("click", () => {
+        if (longPress) { longPress = false; return; }
+        elegirLibro(b);
+      });
+      bookGrid.appendChild(d);
+    });
+
+    // Lista alternativa (nombres completos)
     bookList.innerHTML = "";
     books.forEach(b => {
       const d = document.createElement("div");
       d.className = "book-row";
-      d.textContent = b.book_name;
+      const s = seccionDe(b.book_number);
+      d.innerHTML = `<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${s.color};margin-right:8px;"></span>${escapeHtml(b.book_name)}`;
       d.addEventListener("click", () => elegirLibro(b));
       bookList.appendChild(d);
     });
+    pintarFranjas();
   }
 
   async function elegirLibro(b) {
     selectedBookName = b.book_name;
     currentBookNumber = b.book_number;
+    agregarHistorial(b.book_number, b.book_name);
+    document.querySelectorAll(".bcell").forEach(c => c.classList.toggle("selected", Number(c.dataset.bn) === b.book_number));
     tabEstado("capitulo", true);
     activarTab("capitulo");
     chapterGrid.innerHTML = '<div style="color:#999;padding:10px;">Cargando…</div>';
@@ -532,6 +626,12 @@
       chapterGrid.appendChild(cell);
     });
   }
+
+  bookViewBtn.addEventListener("click", () => {
+    const enLista = bookList.classList.toggle("visible");
+    bookGrid.style.display = enLista ? "none" : "grid";
+    bookViewBtn.textContent = enLista ? "🎨 Cuadrícula" : "📋 Lista";
+  });
 
   async function elegirCapitulo(c, cell) {
     chapterGrid.querySelectorAll(".numcell").forEach(e => e.classList.remove("selected"));
@@ -566,6 +666,59 @@
     pintarLista(verseList, "");
     tabEstado("versiculo", true);
     activarTab("versiculo");
+  }
+
+  function pintarLista(container, marcarQ) {
+    container.innerHTML = "";
+    playlist.forEach((it, i) => {
+      const div = document.createElement("div");
+      div.className = "verse";
+      div.dataset.i = i;
+      div.innerHTML = `
+        <div class="vnum">${it.verse}</div>
+        <div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
+      div.addEventListener("click", () => {
+        proyectar(i, 0);
+        window.scrollTo(0, 0);
+      });
+      container.appendChild(div);
+    });
+  }
+
+  function marcarSeleccion() {
+    document.querySelectorAll(".verse").forEach(el => {
+      el.classList.toggle("selected", Number(el.dataset.i) === curIdx);
+    });
+    document.querySelectorAll("#verseGrid .numcell").forEach(el => {
+      el.classList.toggle("selected", curIdx >= 0 && playlist[curIdx] && Number(el.dataset.v) === playlist[curIdx].verse);
+    });
+    const sel = document.querySelector(".verse.selected");
+    if (sel) sel.scrollIntoView({ block: "nearest" });
+  }
+
+  function verLista() {
+    verseList.style.display = "block";
+    verseGrid.style.display = "none";
+    dotsButton.textContent = "🔲 Cuadrícula";
+    marcarSeleccion();
+  }
+  function verGrilla() {
+    verseList.style.display = "none";
+    verseGrid.style.display = "grid";
+    dotsButton.textContent = "⋮ Lista";
+  }
+  dotsButton.addEventListener("click", () => {
+    (verseList.style.display === "none") ? verLista() : verGrilla();
+  });
+
+  function activarTab(name) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+    document.querySelectorAll(".tabpage").forEach(p => p.classList.toggle("active", p.id === "page-" + name));
+    if (name !== "busqueda") ultimoTab = name;
+  }
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => activarTab(t.dataset.tab)));
+  function tabEstado(name, habilitado) {
+    document.querySelector(`.tab[data-tab="${name}"]`).classList.toggle("disabled", !habilitado);
   }
 
   // ---------- Buscador ----------
@@ -614,7 +767,10 @@
     salirModoResaltar();
     preview.style.display = "none";
     editVerseButton.disabled = true;
-    bookList.innerHTML = '<div class="book-row" style="color:#999;">Elija una versión…</div>';
+    bookGrid.innerHTML = "";
+    bookList.innerHTML = ""; bookList.classList.remove("visible");
+    bookGrid.style.display = "grid";
+    bookViewBtn.textContent = "📋 Lista";
     chapterGrid.innerHTML = ""; verseGrid.innerHTML = ""; verseList.innerHTML = ""; resultList.innerHTML = "";
     searchInput.value = ""; searchInfo.style.display = "none";
     tabEstado("capitulo", false); tabEstado("versiculo", false); tabEstado("busqueda", false);
