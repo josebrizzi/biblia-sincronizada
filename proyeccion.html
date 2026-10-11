@@ -18,7 +18,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: background 0.3s, color 0.3s;
     }
+    body.dark { background: #0e1216; color: #f2f2f2; }
     .proyeccion {
       width: 100vw;
       height: 100vh;
@@ -37,6 +39,7 @@
       margin-bottom: 4vh;
       color: #173f35;
     }
+    body.dark .reference { color: #7fd4b5; }
     .text {
       width: 100%;
       max-height: 76vh;
@@ -49,6 +52,7 @@
       color: #111;
       scrollbar-width: thin;
     }
+    body.dark .text { color: #f2f2f2; }
     .text::-webkit-scrollbar { width: 8px; }
     .text::-webkit-scrollbar-thumb { background: #bbb; border-radius: 8px; }
     .version {
@@ -58,14 +62,17 @@
       font-size: clamp(18px, 2vw, 26px);
       color: #666;
     }
+    body.dark .version { color: #9aa5a0; }
     .waiting { text-align: center; color: #777; }
+    body.dark .waiting { color: #777; }
     .fullscreen-button {
       position: fixed; right: 18px; bottom: 18px;
       width: 44px; height: 44px; border: none; border-radius: 50%;
-      background: rgba(0,0,0,0.15); color: #333; cursor: pointer;
-      font-size: 20px; opacity: 0.35; transition: opacity 0.2s;
+      background: rgba(128,128,128,0.25); color: #888; cursor: pointer;
+      font-size: 20px; opacity: 0.4; transition: opacity 0.2s;
     }
     .fullscreen-button:hover { opacity: 1; }
+    body.dark .fullscreen-button { color: #ccc; }
     #partBadge {
       position: fixed; right: 74px; bottom: 18px;
       padding: 9px 16px; border-radius: 22px;
@@ -79,7 +86,8 @@
       background: #ddd; color: #555; font-size: 12px; opacity: 0.45;
     }
     .status.connected { background: #dcece5; color: #173f35; }
-    mark { background-color: #ffff00; }
+    body.dark .status.connected { background: #1d2a26; color: #7fd4b5; }
+    mark { color: #111; border-radius: 3px; }
     @media (max-width: 600px) {
       .proyeccion { padding: 4vh 5vw; }
       .reference { margin-bottom: 3vh; }
@@ -111,20 +119,33 @@
     let totalPartes = 1;
     let parteActual = 0;
 
+    // ---- TEMA: fondo claro/oscuro (lo elige el panel y queda guardado) ----
+    function aplicarTema(dark) {
+      document.body.classList.toggle("dark", !!dark);
+      try { localStorage.setItem("proyTema", dark ? "oscuro" : "claro"); } catch (e) {}
+    }
+    try { aplicarTema(localStorage.getItem("proyTema") === "oscuro"); } catch (e) {}
+
     function escapeHtml(s) {
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     }
 
     function palabrasAHtml(palabras, desde, hasta) {
-      let html = "", enMark = false;
+      let html = "", colorAbierto = "";
       for (let i = desde; i < hasta; i++) {
         const w = palabras[i];
-        if (w.h && !enMark) { html += "<mark>"; enMark = true; }
-        if (!w.h && enMark) { html += "</mark>"; enMark = false; }
+        if (w.h && w.h !== colorAbierto) {
+          if (colorAbierto) html += "</mark>";
+          html += '<mark style="background-color:' + w.h + '">';
+          colorAbierto = w.h;
+        } else if (!w.h && colorAbierto) {
+          html += "</mark>";
+          colorAbierto = "";
+        }
         html += escapeHtml(w.t);
         if (i < hasta - 1) html += " ";
       }
-      if (enMark) html += "</mark>";
+      if (colorAbierto) html += "</mark>";
       return html;
     }
 
@@ -171,7 +192,7 @@
         if (ok) return rangos;
         ultimo = rangos;
       }
-      return ultimo; // texto gigante: quedará con scroll mínimo
+      return ultimo;
     }
 
     function mostrarVerse(data) {
@@ -206,6 +227,7 @@
       if (!data) return;
       if (data.type === "verse") mostrarVerse(data);
       else if (data.type === "freeText") mostrarFree(data);
+      else if (data.type === "theme") aplicarTema(data.dark);
     }
 
     function irAParte(n) {
@@ -253,7 +275,7 @@
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${location.host}`);
       ws.addEventListener("open", () => {
-        status.textContent = "Conectado · v9";
+        status.textContent = "Conectado · v11";
         status.classList.add("connected");
       });
       ws.addEventListener("close", () => {
