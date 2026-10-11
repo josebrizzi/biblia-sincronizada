@@ -55,10 +55,9 @@
   .tab.disabled { color:#ccc; pointer-events:none; }
 
   main { max-width:1000px; margin:0 auto; }
-  .tabpage { display:none; padding:10px 12px 90px; }
+  .tabpage { display:none; padding:10px 12px 150px; }
   .tabpage.active { display:block; }
 
-  /* ===== LIBROS: cuadrícula con secciones de colores ===== */
   .btoolbar { display:flex; justify-content:flex-end; margin-bottom:6px; }
   .mini-btn { border:none; border-radius:9px; background:#173f35; color:#fff; font-size:14px; font-weight:bold; padding:8px 14px; cursor:pointer; }
   .legend { display:flex; flex-wrap:wrap; gap:5px 14px; padding:2px 2px 10px; font-size:11px; color:#555; }
@@ -105,14 +104,18 @@
   .vtext { font-size:19px; line-height:1.5; }
   .vtext mark { background:#ffe27a; padding:0 2px; border-radius:3px; }
 
-  .actions { display:flex; gap:10px; padding:12px; position:fixed; bottom:0; left:0; right:0; max-width:1000px; margin:0 auto; background:rgba(244,241,234,0.97); border-top:1px solid #ddd; z-index:6; }
+  /* ===== BARRA INFERIOR: fondos + acciones ===== */
+  .bottombar { position:fixed; bottom:0; left:0; right:0; max-width:1000px; margin:0 auto;
+               background:rgba(244,241,234,0.97); border-top:1px solid #ddd; z-index:6; }
+  .fondos-row { display:flex; gap:10px; justify-content:center; padding:8px 10px 2px; }
+  .fbtn { width:42px; height:42px; border-radius:50%; border:3px solid #ccc; cursor:pointer;
+          font-size:19px; display:flex; align-items:center; justify-content:center; background:#fff; }
+  .fbtn.sel { border-color:#173f35; }
+  .actions { display:flex; gap:10px; padding:8px 12px 10px; }
   .actions button { border:none; border-radius:9px; padding:12px 18px; font-size:16px; font-weight:bold; cursor:pointer; }
   #editVerseButton { background:#b45309; color:#fff; flex:1; }
   #editVerseButton.resaltando { background:#7a5c00; }
   #editVerseButton:disabled { background:#ccc; cursor:not-allowed; }
-  .tema-btn { width:56px; font-size:20px; }
-  #lightBtn { background:#fff8e1; color:#8a6d00; }
-  #darkBtn { background:#263238; color:#ffd54f; }
   #clearButton { background:#ddd; color:#222; }
 
   .status { padding:6px 12px 4px; font-size:13px; color:#666; }
@@ -121,7 +124,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v13 · <span id="connectedCount">0</span> conect.</span>
+  <span>v14 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -178,11 +181,12 @@
   </section>
 </main>
 
-<div class="actions">
-  <button id="lightBtn" class="tema-btn" title="Fondo claro">☀️</button>
-  <button id="darkBtn" class="tema-btn" title="Fondo oscuro">🌙</button>
-  <button id="editVerseButton" disabled>🖍️ Resaltar</button>
-  <button id="clearButton">Limpiar</button>
+<div class="bottombar">
+  <div class="fondos-row" id="fondosRow"></div>
+  <div class="actions">
+    <button id="editVerseButton" disabled>🖍️ Resaltar</button>
+    <button id="clearButton">Limpiar</button>
+  </div>
 </div>
 
 <div class="status">WebSocket: <span id="wsStatus">Conectando...</span></div>
@@ -206,14 +210,13 @@
   const curRef = document.getElementById("curRef");
   const curText = document.getElementById("curText");
   const coloresRow = document.getElementById("coloresRow");
+  const fondosRow = document.getElementById("fondosRow");
   const searchInput = document.getElementById("searchInput");
   const searchButton = document.getElementById("searchButton");
   const searchInfo = document.getElementById("searchInfo");
   const searchInfoTexto = document.getElementById("searchInfoTexto");
   const clearSearchButton = document.getElementById("clearSearchButton");
   const editVerseButton = document.getElementById("editVerseButton");
-  const lightBtn = document.getElementById("lightBtn");
-  const darkBtn = document.getElementById("darkBtn");
   const clearButton = document.getElementById("clearButton");
   const wsStatus = document.getElementById("wsStatus");
   const connectedCount = document.getElementById("connectedCount");
@@ -223,7 +226,16 @@
   const NOMBRES = ["Amarillo", "Verde", "Celeste", "Rosa", "Naranja"];
   let colorActual = COLORES[0];
 
-  // ===== SECCIONES Y ABREVIATURAS DE LOS 66 LIBROS =====
+  // Fondos de la proyección (mismos ids que en proyeccion.html)
+  const FONDOS = [
+    { id:"claro",         emoji:"☀️", label:"Blanco",        dark:false },
+    { id:"doodle-claro",  emoji:"🕊️", label:"Doodle claro",  dark:false },
+    { id:"sepia",         emoji:"📜", label:"Sepia",         dark:false },
+    { id:"oscuro",        emoji:"🌙", label:"Oscuro",        dark:true },
+    { id:"doodle-oscuro", emoji:"🌌", label:"Doodle oscuro", dark:true },
+    { id:"azul",          emoji:"🌃", label:"Azul noche",    dark:true }
+  ];
+
   const SECCIONES = [
     { name:"Ley",               color:"#b35c1e", from:1,  to:5  },
     { name:"Historia",          color:"#d68438", from:6,  to:17 },
@@ -251,7 +263,7 @@
   let ultimoTab = "libro";
   let modoResaltar = false;
   let qBusqueda = "";
-  let temaOscuro = false;
+  let fondoActual = "claro";
   let booksByNumber = {};
   let favoritos = [];
   let historial = [];
@@ -272,7 +284,14 @@
   function connectWebSocket() {
     const p = location.protocol === "https:" ? "wss:" : "ws:";
     ws = new WebSocket(`${p}//${location.host}`);
-    ws.addEventListener("open", () => { wsStatus.textContent = "Conectado"; });
+    ws.addEventListener("open", () => {
+      wsStatus.textContent = "Conectado";
+      // sincroniza el fondo elegido con la pantalla
+      try {
+        const f = localStorage.getItem("adminFondo");
+        if (f) enviarFondo(f);
+      } catch(e) {}
+    });
     ws.addEventListener("close", () => { wsStatus.textContent = "Desconectado"; setTimeout(connectWebSocket, 2000); });
     ws.addEventListener("error", () => { wsStatus.textContent = "Error"; });
     ws.addEventListener("message", (ev) => {
@@ -294,22 +313,36 @@
     });
   }
 
-  function enviarTema(dark) {
+  function enviarFondo(id) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "project", reference: "", data: { type: "theme", dark: dark } }));
+      ws.send(JSON.stringify({ type: "project", reference: "", data: { type: "theme", fondo: id } }));
     }
   }
-  function setTema(dark, avisar) {
-    temaOscuro = dark;
-    curBox.classList.toggle("dark", dark);
-    try { localStorage.setItem("adminTema", dark ? "oscuro" : "claro"); } catch (e) {}
-    if (avisar) enviarTema(dark);
-  }
-  lightBtn.addEventListener("click", () => setTema(false, true));
-  darkBtn.addEventListener("click", () => setTema(true, true));
-  try { setTema(localStorage.getItem("adminTema") === "oscuro", false); } catch (e) {}
 
-  // ---------- Paleta ----------
+  function setFondo(id, avisar) {
+    const f = FONDOS.find(x => x.id === id) || FONDOS[0];
+    fondoActual = f.id;
+    curBox.classList.toggle("dark", f.dark);
+    document.querySelectorAll(".fbtn").forEach(b => b.classList.toggle("sel", b.dataset.f === f.id));
+    try { localStorage.setItem("adminFondo", f.id); } catch (e) {}
+    if (avisar) enviarFondo(f.id);
+  }
+  function pintarFondos() {
+    fondosRow.innerHTML = "";
+    FONDOS.forEach(f => {
+      const b = document.createElement("div");
+      b.className = "fbtn" + (f.id === fondoActual ? " sel" : "");
+      b.dataset.f = f.id;
+      b.textContent = f.emoji;
+      b.title = f.label;
+      b.addEventListener("click", () => setFondo(f.id, true));
+      fondosRow.appendChild(b);
+    });
+  }
+  try { setFondo(localStorage.getItem("adminFondo") || "claro", false); } catch(e) { setFondo("claro", false); }
+  pintarFondos();
+
+  // ---------- Paleta de resaltado ----------
   function pintarPaleta() {
     coloresRow.innerHTML = "";
     COLORES.forEach((c, i) => {
@@ -332,7 +365,7 @@
     document.body.classList.remove("resaltando");
   }
 
-  // ---------- Partes ----------
+  // ---------- Partes (estimación local para previews) ----------
   function partirEstimado(words) {
     const total = words.reduce((a,w)=>a+w.t.length+1,0);
     if (total <= UMBRAL_EST || words.length < 2) return [[0, words.length]];
@@ -491,7 +524,7 @@
     }
   });
 
-  // ================= LIBROS: cuadrícula, favoritos e historia =================
+  // ================= LIBROS =================
   function guardarFavHist() {
     try {
       localStorage.setItem("bibFav", JSON.stringify(favoritos));
@@ -568,7 +601,6 @@
     booksByNumber = {};
     books.forEach(b => { booksByNumber[b.book_number] = b.book_name; });
 
-    // Cuadrícula de colores
     bookGrid.innerHTML = "";
     books.forEach(b => {
       const s = seccionDe(b.book_number);
@@ -594,7 +626,6 @@
       bookGrid.appendChild(d);
     });
 
-    // Lista alternativa (nombres completos)
     bookList.innerHTML = "";
     books.forEach(b => {
       const d = document.createElement("div");
