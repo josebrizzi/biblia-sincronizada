@@ -31,7 +31,7 @@
   .pbox { border-radius:10px; padding:10px 12px; cursor:pointer; }
   .pbox .pref { font-weight:bold; font-size:14px; }
   .pbox .ptext { font-size:16px; line-height:1.4; margin-top:2px; }
-    .pbox.prev {
+  .pbox.prev {
     background:#b91c1c; color:#fff; text-align:center;
     padding:16px 12px; border-radius:12px; min-height:76px;
     box-shadow:0 2px 8px rgba(0,0,0,.25);
@@ -58,6 +58,7 @@
   }
   .pbox.next .pref { color:#ffd9d9; font-size:13px; }
   .pbox.next .ptext { color:#fff; font-size:14px; }
+  .pbox.cur { background:#fff; border:2px solid #173f35; cursor:default; transition: background 0.3s, color 0.3s; }
   .pbox.cur .pref { color:#173f35; font-size:16px; font-family:'Montserrat', Arial, sans-serif; }
   .pbox.cur .ptext { font-size:22px; font-weight:bold; line-height:1.5; max-height:40vh; overflow-y:auto;
                      font-family:'Inter', Arial, sans-serif; }
@@ -182,7 +183,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v16 · <span id="connectedCount">0</span> conect.</span>
+  <span>v17 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div id="lockOverlay" class="hidden">
@@ -399,7 +400,7 @@
     ws = new WebSocket(`${p}//${location.host}`);
     ws.addEventListener("open", () => {
       wsStatus.textContent = "Conectado";
-      enviarAuth(); // se autentica siempre al conectar (con o sin código guardado)
+      enviarAuth();
       try {
         const f = localStorage.getItem("adminFondo");
         if (f) enviarFondo(f);
@@ -507,7 +508,7 @@
 
   function proyectar(idx, part) {
     if (idx < 0 || idx >= playlist.length) return;
-    if (esperandoAuth || !lockOverlay.classList.contains("hidden")) return; // sin código no se proyecta
+    if (esperandoAuth || !lockOverlay.classList.contains("hidden")) return;
     curIdx = idx;
     curPart = Math.max(0, part || 0);
     partesInfo = null;
@@ -700,7 +701,7 @@
     elegirLibro({ book_number: num, book_name: name });
   }
 
-    async function cargarVersiones() {
+  async function cargarVersiones() {
     const r = await fetch("./api/versions");
     const vs = await r.json();
     versionSelect.innerHTML = '<option value="">Versión…</option>';
@@ -709,13 +710,14 @@
       o.value = v; o.textContent = v;
       versionSelect.appendChild(o);
     });
-    // Preselecciona Reina-Valera 1960 y carga los libros automáticamente
+    // Preselecciona Reina-Valera 1960 por defecto y carga los libros automáticamente
     const defecto = vs.find(v => /1960/.test(v)) || vs[0];
     if (defecto) {
       versionSelect.value = defecto;
       cargarLibros();
     }
- 
+  }
+
   async function cargarLibros() {
     const r = await fetch("./api/books?version=" + encodeURIComponent(versionSelect.value));
     const books = await r.json();
@@ -835,12 +837,12 @@
       });
       verseGrid.appendChild(cellv);
     }
-    pintarLista(verseList, "");
+    pintarLista(verseList, "", false);
     tabEstado("versiculo", true);
     activarTab("versiculo");
   }
 
-    function pintarLista(container, marcarQ, conReferencia) {
+  function pintarLista(container, marcarQ, conReferencia) {
     container.innerHTML = "";
     playlist.forEach((it, i) => {
       const div = document.createElement("div");
@@ -854,13 +856,14 @@
       div.innerHTML = conReferencia
         ? refHead + texto
         : `<div class="vnum">${it.verse}</div>` + texto;
- div.addEventListener("click", () => {
+      div.addEventListener("click", () => {
         proyectar(i, 0);
-        if (conReferencia) window.scrollTo(0, 0); // solo la búsqueda sube al preview; la lista se queda quieta
+        if (conReferencia) window.scrollTo(0, 0);
       });
       container.appendChild(div);
-    });        
-  }            
+    });
+  }
+
   function marcarSeleccion() {
     document.querySelectorAll(".verse").forEach(el => {
       el.classList.toggle("selected", Number(el.dataset.i) === curIdx);
