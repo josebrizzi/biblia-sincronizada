@@ -31,11 +31,33 @@
   .pbox { border-radius:10px; padding:10px 12px; cursor:pointer; }
   .pbox .pref { font-weight:bold; font-size:14px; }
   .pbox .ptext { font-size:16px; line-height:1.4; margin-top:2px; }
-  .pbox.prev { background:#e9e7e1; color:#555; }
-  .pbox.prev::before { content:"◀ TOCÁ PARA VOLVER"; display:block; font-size:10px; color:#999; letter-spacing:.5px; }
-  .pbox.next { background:#dcece5; color:#173f35; }
-  .pbox.next::after { content:"TOCÁ PARA AVANZAR ▶"; display:block; font-size:10px; color:#5c8a7d; text-align:right; letter-spacing:.5px; }
-  .pbox.cur { background:#fff; border:2px solid #173f35; cursor:default; transition: background 0.3s, color 0.3s; }
+    .pbox.prev {
+    background:#b91c1c; color:#fff; text-align:center;
+    padding:16px 12px; border-radius:12px; min-height:76px;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .pbox.prev:active { filter:brightness(1.15); }
+  .pbox.prev::before {
+    content:"◀◀  VOLVER"; display:block;
+    font-family:'Montserrat', Arial, sans-serif;
+    font-size:24px; font-weight:900; letter-spacing:2px; margin-bottom:4px;
+  }
+  .pbox.prev .pref { color:#ffd9d9; font-size:13px; }
+  .pbox.prev .ptext { color:#fff; font-size:14px; }
+
+  .pbox.next {
+    background:#dc2626; color:#fff; text-align:center;
+    padding:16px 12px; border-radius:12px; min-height:76px;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .pbox.next:active { filter:brightness(1.15); }
+  .pbox.next::after {
+    content:"AVANZAR  ▶▶"; display:block;
+    font-family:'Montserrat', Arial, sans-serif;
+    font-size:24px; font-weight:900; letter-spacing:2px; margin-top:4px;
+  }
+  .pbox.next .pref { color:#ffd9d9; font-size:13px; }
+  .pbox.next .ptext { color:#fff; font-size:14px; }
   .pbox.cur .pref { color:#173f35; font-size:16px; font-family:'Montserrat', Arial, sans-serif; }
   .pbox.cur .ptext { font-size:22px; font-weight:bold; line-height:1.5; max-height:40vh; overflow-y:auto;
                      font-family:'Inter', Arial, sans-serif; }
@@ -827,13 +849,11 @@
       div.innerHTML = conReferencia
         ? refHead + texto
         : `<div class="vnum">${it.verse}</div>` + texto;
-      div.addEventListener("click", () => {
+           div.addEventListener("click", () => {
         proyectar(i, 0);
-        window.scrollTo(0, 0);
+        if (conReferencia) window.scrollTo(0, 0); // solo la búsqueda sube al preview; la lista se queda quieta
       });
       container.appendChild(div);
-    });
-  }
 
   function marcarSeleccion() {
     document.querySelectorAll(".verse").forEach(el => {
