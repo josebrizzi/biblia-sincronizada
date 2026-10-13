@@ -854,14 +854,13 @@
       div.innerHTML = conReferencia
         ? refHead + texto
         : `<div class="vnum">${it.verse}</div>` + texto;
-      div.addEventListener("click", () => {
+ div.addEventListener("click", () => {
         proyectar(i, 0);
         if (conReferencia) window.scrollTo(0, 0); // solo la búsqueda sube al preview; la lista se queda quieta
       });
       container.appendChild(div);
-    });
-  }
-
+    });        
+  }            
   function marcarSeleccion() {
     document.querySelectorAll(".verse").forEach(el => {
       el.classList.toggle("selected", Number(el.dataset.i) === curIdx);
