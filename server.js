@@ -9,6 +9,10 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 8090;
+const CODIGO_ACCESO = String(process.env.CODIGO_ACCESO || "").trim();
+if (!CODIGO_ACCESO) {
+  console.log("AVISO: CODIGO_ACCESO no definida en Render — la app está abierta (sin código).");
+}
 
 const db = new sqlite3.Database(
   path.join(__dirname, "biblia.db"),
@@ -22,6 +26,8 @@ const db = new sqlite3.Database(
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.get("/admin.html", (req, res) => res.sendFile(path.join(__dirname, "admin.html")));
 app.get("/proyeccion.html", (req, res) => res.sendFile(path.join(__dirname, "proyeccion.html")));
+app.get("/manifest.json", (req, res) => res.sendFile(path.join(__dirname, "manifest.json")));
+app.get("/icono.svg", (req, res) => res.sendFile(path.join(__dirname, "icono.svg")));
 
 // ---- API de la Biblia ----
 app.get("/api/versions", (req, res) => {
@@ -73,7 +79,7 @@ app.get("/api/verses", (req, res) => {
   );
 });
 
-// ---- NUEVO: buscador por palabra o frase ----
+// ---- Buscador ----
 app.get("/api/search", (req, res) => {
   const q = String(req.query.q || "").trim();
   const version = String(req.query.version || "");
@@ -82,7 +88,6 @@ app.get("/api/search", (req, res) => {
   if (!q) return res.status(400).json({ error: "Falta el parámetro q" });
   if (!version) return res.status(400).json({ error: "Falta la versión." });
 
-  // Escapa los caracteres especiales de LIKE para que no rompan la búsqueda
   const seguro = q.replace(/[\\%_]/g, (m) => "\\" + m);
   const like = "%" + seguro + "%";
 
@@ -100,7 +105,7 @@ app.get("/api/search", (req, res) => {
   );
 });
 
-// ---- WebSocket: reenvía lo proyectado a todas las pantallas ----
+// ---- WebSocket ----
 function broadcastCount() {
   let n = 0;
   wss.clients.forEach((c) => { if (c.readyState === WebSocket.OPEN) n++; });
@@ -110,13 +115,37 @@ function broadcastCount() {
 
 wss.on("connection", (ws) => {
   ws.isAlive = true;
+  ws.autorizado = false;
   ws.on("pong", () => { ws.isAlive = true; });
   broadcastCount();
 
   ws.on("message", (message) => {
     try {
       const data = JSON.parse(message.toString());
+
+      // Autenticación por código (solo si CODIGO_ACCESO está definida en Render)
+      if (data.type === "auth") {
+        if (!CODIGO_ACCESO) {
+          ws.autorizado = true;
+          ws.send(JSON.stringify({ type: "auth-ok", abierto: true }));
+          return;
+        }
+        if (String(data.codigo || "").trim() === CODIGO_ACCESO) {
+          ws.autorizado = true;
+          ws.send(JSON.stringify({ type: "auth-ok" }));
+        } else {
+          ws.autorizado = false;
+          ws.send(JSON.stringify({ type: "auth-error" }));
+        }
+        return;
+      }
+
       if (data.type === "project" && data.data) {
+        const t = data.data.type;
+        // El contenido (versículos y citas) exige código; lo demás (sincronía de partes, fondo) pasa libre
+        const necesitaAuth = (t === "verse" || t === "freeText");
+        if (necesitaAuth && CODIGO_ACCESO && !ws.autorizado) return;
+
         const out = JSON.stringify({ type: "projection", data: data.data });
         wss.clients.forEach((c) => {
           if (c.readyState === WebSocket.OPEN) c.send(out);
@@ -128,7 +157,6 @@ wss.on("connection", (ws) => {
   ws.on("close", () => broadcastCount());
 });
 
-// Latido para limpiar conexiones muertas
 setInterval(() => {
   wss.clients.forEach((c) => {
     if (!c.isAlive) return c.terminate();
