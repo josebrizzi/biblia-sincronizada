@@ -67,6 +67,15 @@
   .chipstrip.has { display:flex; }
   .chiplabel { flex:0 0 auto; font-size:11px; color:#777; align-self:center; padding-right:2px; font-weight:bold; }
   .chip { flex:0 0 auto; border-radius:8px; padding:8px 11px; color:#fff; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+
+  /* Títulos ANTIGUO / NUEVO TESTAMENTO en la cuadrícula */
+  .gr-title { grid-column: 1 / -1; font-weight:bold; color:#173f35; font-size:15px;
+              letter-spacing:1.5px; padding:10px 2px 6px; border-bottom:3px solid #d8d3c8; margin-top:6px;
+              font-family:'Montserrat', Arial, sans-serif; }
+  .gr-title.nt { color:#7b4bab; border-bottom-color:#d9c8ef; }
+  .list-title { padding:10px 14px; background:#eef4f1; color:#173f35; font-weight:bold; font-size:14px; letter-spacing:1.5px; }
+  .list-title.nt { background:#f3ecfb; color:#7b4bab; }
+
   .bgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(64px, 1fr)); gap:6px; }
   .bcell { position:relative; border-radius:10px; padding:15px 2px; text-align:center; color:#fff;
            font-weight:bold; font-size:16px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.28);
@@ -100,11 +109,15 @@
   .verse:last-child { border-bottom:none; }
   .verse:hover { background:#f4f7f5; }
   .verse.selected { background:#c8e6c9; }
+  .verse.ref { display:block; }
   .vnum { min-width:30px; font-weight:bold; color:#173f35; font-size:18px; }
   .vtext { font-size:19px; line-height:1.5; }
   .vtext mark { background:#ffe27a; padding:0 2px; border-radius:3px; }
+  .search-ref { font-size:15px; font-weight:bold; color:#173f35; margin-bottom:4px; display:flex; align-items:center; gap:7px;
+                font-family:'Montserrat', Arial, sans-serif; }
+  .search-ref .dot { width:11px; height:11px; border-radius:3px; display:inline-block; flex:0 0 auto; }
+  .search-ref .bn { color:#888; font-weight:normal; font-family:Arial; font-size:13px; }
 
-  /* ===== BARRA INFERIOR: fondos + acciones ===== */
   .bottombar { position:fixed; bottom:0; left:0; right:0; max-width:1000px; margin:0 auto;
                background:rgba(244,241,234,0.97); border-top:1px solid #ddd; z-index:6; }
   .fondos-row { display:flex; gap:10px; justify-content:center; padding:8px 10px 2px; }
@@ -124,7 +137,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v14 · <span id="connectedCount">0</span> conect.</span>
+  <span>v15 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -226,7 +239,6 @@
   const NOMBRES = ["Amarillo", "Verde", "Celeste", "Rosa", "Naranja"];
   let colorActual = COLORES[0];
 
-  // Fondos de la proyección (mismos ids que en proyeccion.html)
   const FONDOS = [
     { id:"claro",         emoji:"☀️", label:"Blanco",        dark:false },
     { id:"doodle-claro",  emoji:"🕊️", label:"Doodle claro",  dark:false },
@@ -251,6 +263,9 @@
   const ABBR = ["Gn","Ex","Lv","Nm","Dt","Js","Jz","Rt","1S","2S","1R","2R","1Cr","2Cr","Esd","Neh","Est","Job","Sal","Pr","Ec","Ct","Is","Jr","Lm","Ez","Dn","Os","Jl","Am","Ob","Jon","Mi","Nah","Hab","Sof","Hag","Zac","Mal","Mt","Mr","Lc","Jn","Hch","Ro","1Co","2Co","Gá","Ef","Fil","Col","1Ts","2Ts","1Ti","2Ti","Tit","Flm","Heb","Stg","1P","2P","1Jn","2Jn","3Jn","Jud","Ap"];
   function seccionDe(n) {
     return SECCIONES.find(s => n >= s.from && n <= s.to) || { name:"Libro", color:"#607d8b" };
+  }
+  function abreviar(n) {
+    return (n >= 1 && n <= 66) ? ABBR[n-1] : "?";
   }
 
   let ws = null;
@@ -286,7 +301,6 @@
     ws = new WebSocket(`${p}//${location.host}`);
     ws.addEventListener("open", () => {
       wsStatus.textContent = "Conectado";
-      // sincroniza el fondo elegido con la pantalla
       try {
         const f = localStorage.getItem("adminFondo");
         if (f) enviarFondo(f);
@@ -318,7 +332,6 @@
       ws.send(JSON.stringify({ type: "project", reference: "", data: { type: "theme", fondo: id } }));
     }
   }
-
   function setFondo(id, avisar) {
     const f = FONDOS.find(x => x.id === id) || FONDOS[0];
     fondoActual = f.id;
@@ -342,7 +355,6 @@
   try { setFondo(localStorage.getItem("adminFondo") || "claro", false); } catch(e) { setFondo("claro", false); }
   pintarFondos();
 
-  // ---------- Paleta de resaltado ----------
   function pintarPaleta() {
     coloresRow.innerHTML = "";
     COLORES.forEach((c, i) => {
@@ -365,7 +377,6 @@
     document.body.classList.remove("resaltando");
   }
 
-  // ---------- Partes (estimación local para previews) ----------
   function partirEstimado(words) {
     const total = words.reduce((a,w)=>a+w.t.length+1,0);
     if (total <= UMBRAL_EST || words.length < 2) return [[0, words.length]];
@@ -387,7 +398,6 @@
     return s;
   }
 
-  // ---------- Proyección ----------
   function proyectar(idx, part) {
     if (idx < 0 || idx >= playlist.length) return;
     curIdx = idx;
@@ -473,7 +483,6 @@
     else if (curIdx < playlist.length - 1) proyectar(curIdx + 1, 0);
   });
 
-  // ---------- Resaltar ----------
   editVerseButton.addEventListener("click", () => {
     if (curIdx < 0) return;
     modoResaltar = !modoResaltar;
@@ -542,9 +551,8 @@
     lista.forEach(bk => {
       const c = document.createElement("div");
       c.className = "chip";
-      const s = seccionDe(bk.n);
-      c.style.background = s.color;
-      c.textContent = bk.n >= 1 && bk.n <= 66 ? ABBR[bk.n-1] : bk.name;
+      c.style.background = seccionDe(bk.n).color;
+      c.textContent = abreviar(bk.n);
       c.title = bk.name;
       c.addEventListener("click", () => alTocar(bk));
       strip.appendChild(c);
@@ -601,16 +609,27 @@
     booksByNumber = {};
     books.forEach(b => { booksByNumber[b.book_number] = b.book_name; });
 
+    // Cuadrícula con división AT / NT
     bookGrid.innerHTML = "";
+    const tAt = document.createElement("div");
+    tAt.className = "gr-title";
+    tAt.textContent = "✝️ ANTIGUO TESTAMENTO";
+    bookGrid.appendChild(tAt);
+
     books.forEach(b => {
+      if (b.book_number === 40) {
+        const tNt = document.createElement("div");
+        tNt.className = "gr-title nt";
+        tNt.textContent = "✝️ NUEVO TESTAMENTO";
+        bookGrid.appendChild(tNt);
+      }
       const s = seccionDe(b.book_number);
       const d = document.createElement("div");
       d.className = "bcell" + (favoritos.some(f => f.n === b.book_number) ? " fav" : "");
       d.dataset.bn = b.book_number;
       d.style.background = s.color;
       d.title = b.book_name + " — " + s.name;
-      const abbr = (b.book_number >= 1 && b.book_number <= 66) ? ABBR[b.book_number-1] : b.book_name.slice(0,3);
-      d.innerHTML = `<span class="bknum">${b.book_number}</span>${escapeHtml(abbr)}<span class="bkfull">${escapeHtml(b.book_name)}</span><span class="star">★</span>`;
+      d.innerHTML = `<span class="bknum">${b.book_number}</span>${escapeHtml(abreviar(b.book_number))}<span class="bkfull">${escapeHtml(b.book_name)}</span><span class="star">★</span>`;
       let pressTimer = null, longPress = false;
       d.addEventListener("touchstart", () => {
         longPress = false;
@@ -626,8 +645,19 @@
       bookGrid.appendChild(d);
     });
 
+    // Lista con división AT / NT
     bookList.innerHTML = "";
+    let tL = document.createElement("div");
+    tL.className = "list-title";
+    tL.textContent = "✝️ ANTIGUO TESTAMENTO";
+    bookList.appendChild(tL);
     books.forEach(b => {
+      if (b.book_number === 40) {
+        tL = document.createElement("div");
+        tL.className = "list-title nt";
+        tL.textContent = "✝️ NUEVO TESTAMENTO";
+        bookList.appendChild(tL);
+      }
       const d = document.createElement("div");
       d.className = "book-row";
       const s = seccionDe(b.book_number);
@@ -699,15 +729,21 @@
     activarTab("versiculo");
   }
 
-  function pintarLista(container, marcarQ) {
+  // conReferencia=true → muestra "Gn 2:5 · Génesis" (búsquedas)
+  function pintarLista(container, marcarQ, conReferencia) {
     container.innerHTML = "";
     playlist.forEach((it, i) => {
       const div = document.createElement("div");
-      div.className = "verse";
+      div.className = "verse" + (conReferencia ? " ref" : "");
       div.dataset.i = i;
-      div.innerHTML = `
-        <div class="vnum">${it.verse}</div>
-        <div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
+      const s = seccionDe(it.bookNumber);
+      const refHead = conReferencia
+        ? `<div class="search-ref"><i class="dot" style="background:${s.color}"></i>${abreviar(it.bookNumber)} ${it.chapter}:${it.verse} <span class="bn">· ${escapeHtml(it.bookName)} · ${s.name}</span></div>`
+        : "";
+      const texto = `<div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
+      div.innerHTML = conReferencia
+        ? refHead + texto
+        : `<div class="vnum">${it.verse}</div>` + texto;
       div.addEventListener("click", () => {
         proyectar(i, 0);
         window.scrollTo(0, 0);
@@ -761,7 +797,14 @@
       else return;
       await cargarLibros();
     }
-    resultList.innerHTML = '<div class="verse" style="color:#999;">Buscando…</div>';
+    resultList.innerHTML = '<div class="verse ref" style="color:#999;">Buscando…</div>';
+    searchInfo.style.display = "flex";
+    searchInfoTexto.textContent = `Buscando “${q}”…`;
+    tabEstado("busqueda", true);
+    activarTab("busqueda");
+    // Se desplaza ya hacia el apartado de resultados
+    setTimeout(() => document.getElementById("page-busqueda").scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+
     const r = await fetch(`./api/search?q=${encodeURIComponent(q)}&version=${encodeURIComponent(versionSelect.value)}`);
     const res = await r.json();
 
@@ -774,11 +817,8 @@
     }));
     partesInfo = null; qBusqueda = q;
 
-    searchInfo.style.display = "flex";
     searchInfoTexto.textContent = `“${q}”: ${res.length} versículo(s)`;
-    tabEstado("busqueda", true);
-    activarTab("busqueda");
-    pintarLista(resultList, q);
+    pintarLista(resultList, q, true); // con referencia completa
   }
   function salirBusqueda() {
     searchInfo.style.display = "none";
@@ -791,7 +831,6 @@
   searchInput.addEventListener("keydown", e => { if (e.key === "Enter") hacerBusqueda(); });
   clearSearchButton.addEventListener("click", salirBusqueda);
 
-  // ---------- Limpiar ----------
   clearButton.addEventListener("click", () => {
     playlist = []; curIdx = -1; curPart = 0; partesInfo = null;
     selectedBookName = ""; currentBookNumber = null;
