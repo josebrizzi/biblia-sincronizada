@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Biblia Sincronizada — Predicador</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icono.svg">
+<meta name="theme-color" content="#173f35">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
@@ -68,7 +71,6 @@
   .chiplabel { flex:0 0 auto; font-size:11px; color:#777; align-self:center; padding-right:2px; font-weight:bold; }
   .chip { flex:0 0 auto; border-radius:8px; padding:8px 11px; color:#fff; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.2); }
 
-  /* Títulos ANTIGUO / NUEVO TESTAMENTO en la cuadrícula */
   .gr-title { grid-column: 1 / -1; font-weight:bold; color:#173f35; font-size:15px;
               letter-spacing:1.5px; padding:10px 2px 6px; border-bottom:3px solid #d8d3c8; margin-top:6px;
               font-family:'Montserrat', Arial, sans-serif; }
@@ -131,14 +133,45 @@
   #editVerseButton:disabled { background:#ccc; cursor:not-allowed; }
   #clearButton { background:#ddd; color:#222; }
 
-  .status { padding:6px 12px 4px; font-size:13px; color:#666; }
+  .status { padding:6px 12px 4px; font-size:13px; color:#666; display:flex; gap:12px; align-items:center; }
+  .status .lockbtn { margin-left:auto; background:none; border:none; color:#666; font-size:13px; cursor:pointer; text-decoration:underline; }
+
+  /* ===== CANDADO ===== */
+  #lockOverlay {
+    position:fixed; inset:0; z-index:100; background:#173f35;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  #lockOverlay.hidden { display:none; }
+  .lock-card { background:#fff; border-radius:16px; padding:30px 24px; max-width:360px; width:100%; text-align:center; }
+  .lock-title { font-family:'Montserrat', Arial, sans-serif; font-weight:900; font-size:22px; color:#173f35; margin-bottom:8px; }
+  .lock-card p { color:#666; font-size:15px; margin:0 0 16px; }
+  #lockInput {
+    width:100%; padding:14px; font-size:20px; text-align:center; letter-spacing:3px;
+    border:2px solid #ccc; border-radius:10px; outline:none; box-sizing:border-box;
+  }
+  #lockInput:focus { border-color:#173f35; }
+  #lockBtn {
+    width:100%; margin-top:14px; padding:14px; border:none; border-radius:10px;
+    background:#173f35; color:#fff; font-size:18px; font-weight:bold; cursor:pointer;
+  }
+  .lock-msg { margin-top:10px; color:#b91c1c; font-size:14px; font-weight:bold; min-height:18px; }
 </style>
 </head>
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v15 · <span id="connectedCount">0</span> conect.</span>
+  <span>v16 · <span id="connectedCount">0</span> conect.</span>
 </header>
+
+<div id="lockOverlay" class="hidden">
+  <div class="lock-card">
+    <div class="lock-title">🔒 Biblia Sincronizada</div>
+    <p>Ingresá el código que te dio el coordinador para poder proyectar.</p>
+    <input id="lockInput" type="password" autocomplete="off" placeholder="Código">
+    <button id="lockBtn">ENTRAR</button>
+    <div class="lock-msg" id="lockMsg"></div>
+  </div>
+</div>
 
 <div class="topbar">
   <select id="version"><option value="">Versión…</option></select>
@@ -202,7 +235,10 @@
   </div>
 </div>
 
-<div class="status">WebSocket: <span id="wsStatus">Conectando...</span></div>
+<div class="status">
+  WebSocket: <span id="wsStatus">Conectando...</span>
+  <button class="lockbtn" id="cambiarCodigoBtn">🔒 cambiar código</button>
+</div>
 
 <script>
   const versionSelect = document.getElementById("version");
@@ -233,6 +269,11 @@
   const clearButton = document.getElementById("clearButton");
   const wsStatus = document.getElementById("wsStatus");
   const connectedCount = document.getElementById("connectedCount");
+  const lockOverlay = document.getElementById("lockOverlay");
+  const lockInput = document.getElementById("lockInput");
+  const lockBtn = document.getElementById("lockBtn");
+  const lockMsg = document.getElementById("lockMsg");
+  const cambiarCodigoBtn = document.getElementById("cambiarCodigoBtn");
 
   const UMBRAL_EST = 240;
   const COLORES = ["#ffff00", "#8aff8a", "#7cdcff", "#ff9ee8", "#ffc966"];
@@ -285,6 +326,41 @@
   try { favoritos = JSON.parse(localStorage.getItem("bibFav") || "[]"); } catch(e) { favoritos = []; }
   try { historial = JSON.parse(localStorage.getItem("bibHist") || "[]"); } catch(e) { historial = []; }
 
+  // ===== CANDADO =====
+  let codigoGuardado = "";
+  try { codigoGuardado = localStorage.getItem("codAcceso") || ""; } catch(e) {}
+  let esperandoAuth = false;
+
+  function mostrarLock(msg) {
+    lockMsg.textContent = msg || "";
+    lockOverlay.classList.remove("hidden");
+    setTimeout(() => lockInput.focus(), 100);
+  }
+  function ocultarLock() {
+    lockOverlay.classList.add("hidden");
+    lockInput.value = "";
+    lockMsg.textContent = "";
+  }
+  function enviarAuth() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      esperandoAuth = true;
+      ws.send(JSON.stringify({ type: "auth", codigo: codigoGuardado }));
+    }
+  }
+  lockBtn.addEventListener("click", () => {
+    const c = lockInput.value.trim();
+    if (!c) { lockMsg.textContent = "Escribí el código."; return; }
+    codigoGuardado = c;
+    try { localStorage.setItem("codAcceso", c); } catch(e) {}
+    enviarAuth();
+  });
+  lockInput.addEventListener("keydown", (e) => { if (e.key === "Enter") lockBtn.click(); });
+  cambiarCodigoBtn.addEventListener("click", () => {
+    codigoGuardado = "";
+    try { localStorage.removeItem("codAcceso"); } catch(e) {}
+    mostrarLock("Si el coordinador cambió el código, ingresá el nuevo.");
+  });
+
   function escapeHtml(t) {
     return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
@@ -301,6 +377,7 @@
     ws = new WebSocket(`${p}//${location.host}`);
     ws.addEventListener("open", () => {
       wsStatus.textContent = "Conectado";
+      enviarAuth(); // se autentica siempre al conectar (con o sin código guardado)
       try {
         const f = localStorage.getItem("adminFondo");
         if (f) enviarFondo(f);
@@ -312,6 +389,14 @@
       try {
         const data = JSON.parse(ev.data);
         if (data.type === "connected") { connectedCount.textContent = data.count; return; }
+        if (data.type === "auth-ok") { esperandoAuth = false; ocultarLock(); return; }
+        if (data.type === "auth-error") {
+          esperandoAuth = false;
+          codigoGuardado = "";
+          try { localStorage.removeItem("codAcceso"); } catch(e) {}
+          mostrarLock("Código incorrecto o vencido. Pedile el nuevo al coordinador.");
+          return;
+        }
         if (data.type === "projection") {
           const d = data.data || {};
           if (d.type === "parts-info" && curIdx >= 0) {
@@ -400,6 +485,7 @@
 
   function proyectar(idx, part) {
     if (idx < 0 || idx >= playlist.length) return;
+    if (esperandoAuth || !lockOverlay.classList.contains("hidden")) return; // sin código no se proyecta
     curIdx = idx;
     curPart = Math.max(0, part || 0);
     partesInfo = null;
@@ -609,7 +695,6 @@
     booksByNumber = {};
     books.forEach(b => { booksByNumber[b.book_number] = b.book_name; });
 
-    // Cuadrícula con división AT / NT
     bookGrid.innerHTML = "";
     const tAt = document.createElement("div");
     tAt.className = "gr-title";
@@ -645,7 +730,6 @@
       bookGrid.appendChild(d);
     });
 
-    // Lista con división AT / NT
     bookList.innerHTML = "";
     let tL = document.createElement("div");
     tL.className = "list-title";
@@ -729,7 +813,6 @@
     activarTab("versiculo");
   }
 
-  // conReferencia=true → muestra "Gn 2:5 · Génesis" (búsquedas)
   function pintarLista(container, marcarQ, conReferencia) {
     container.innerHTML = "";
     playlist.forEach((it, i) => {
@@ -802,7 +885,6 @@
     searchInfoTexto.textContent = `Buscando “${q}”…`;
     tabEstado("busqueda", true);
     activarTab("busqueda");
-    // Se desplaza ya hacia el apartado de resultados
     setTimeout(() => document.getElementById("page-busqueda").scrollIntoView({ behavior: "smooth", block: "start" }), 60);
 
     const r = await fetch(`./api/search?q=${encodeURIComponent(q)}&version=${encodeURIComponent(versionSelect.value)}`);
@@ -818,7 +900,7 @@
     partesInfo = null; qBusqueda = q;
 
     searchInfoTexto.textContent = `“${q}”: ${res.length} versículo(s)`;
-    pintarLista(resultList, q, true); // con referencia completa
+    pintarLista(resultList, q, true);
   }
   function salirBusqueda() {
     searchInfo.style.display = "none";
