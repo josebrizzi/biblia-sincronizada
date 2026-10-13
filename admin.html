@@ -700,7 +700,7 @@
     elegirLibro({ book_number: num, book_name: name });
   }
 
-  async function cargarVersiones() {
+    async function cargarVersiones() {
     const r = await fetch("./api/versions");
     const vs = await r.json();
     versionSelect.innerHTML = '<option value="">Versión…</option>';
@@ -709,8 +709,13 @@
       o.value = v; o.textContent = v;
       versionSelect.appendChild(o);
     });
-  }
-
+    // Preselecciona Reina-Valera 1960 y carga los libros automáticamente
+    const defecto = vs.find(v => /1960/.test(v)) || vs[0];
+    if (defecto) {
+      versionSelect.value = defecto;
+      cargarLibros();
+    }
+ 
   async function cargarLibros() {
     const r = await fetch("./api/books?version=" + encodeURIComponent(versionSelect.value));
     const books = await r.json();
@@ -835,7 +840,7 @@
     activarTab("versiculo");
   }
 
-  function pintarLista(container, marcarQ, conReferencia) {
+    function pintarLista(container, marcarQ, conReferencia) {
     container.innerHTML = "";
     playlist.forEach((it, i) => {
       const div = document.createElement("div");
@@ -849,11 +854,13 @@
       div.innerHTML = conReferencia
         ? refHead + texto
         : `<div class="vnum">${it.verse}</div>` + texto;
-           div.addEventListener("click", () => {
+      div.addEventListener("click", () => {
         proyectar(i, 0);
         if (conReferencia) window.scrollTo(0, 0); // solo la búsqueda sube al preview; la lista se queda quieta
       });
       container.appendChild(div);
+    });
+  }
 
   function marcarSeleccion() {
     document.querySelectorAll(".verse").forEach(el => {
