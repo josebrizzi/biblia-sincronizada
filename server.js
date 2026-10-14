@@ -79,17 +79,18 @@ app.get("/api/verses", (req, res) => {
   );
 });
 
-// ---- Buscador ----
+// ---- Buscador: palabra completa, hasta 200 resultados ----
 app.get("/api/search", (req, res) => {
   const q = String(req.query.q || "").trim();
   const version = String(req.query.version || "");
-  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+  const limit = Math.min(parseInt(req.query.limit, 10) || 200, 200);
 
   if (!q) return res.status(400).json({ error: "Falta el parámetro q" });
   if (!version) return res.status(400).json({ error: "Falta la versión." });
 
   const seguro = q.replace(/[\\%_]/g, (m) => "\\" + m);
   const like = "%" + seguro + "%";
+  const CANDIDATOS = 4000;
 
   db.all(
     `SELECT book_number, book_name, chapter, verse, text
@@ -97,10 +98,20 @@ app.get("/api/search", (req, res) => {
      WHERE version = ? AND text LIKE ? ESCAPE '\\'
      ORDER BY book_number, chapter, verse
      LIMIT ?`,
-    [version, like, limit],
+    [version, like, CANDIDATOS],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json(rows);
+
+      // Filtra por palabra/frase COMPLETA (no subcadenas): "cerdo" no matchea "sacerdote"
+      const esc = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      let re;
+      try {
+        re = new RegExp("(?<![\\p{L}\\p{N}])" + esc + "(?![\\p{L}\\p{N}])", "iu");
+      } catch (e) {
+        re = new RegExp("\\b" + esc + "\\b", "i");
+      }
+      const filtradas = rows.filter(r => re.test(r.text));
+      res.json(filtradas.slice(0, limit));
     }
   );
 });
@@ -123,7 +134,6 @@ wss.on("connection", (ws) => {
     try {
       const data = JSON.parse(message.toString());
 
-      // Autenticación por código (solo si CODIGO_ACCESO está definida en Render)
       if (data.type === "auth") {
         if (!CODIGO_ACCESO) {
           ws.autorizado = true;
@@ -142,7 +152,6 @@ wss.on("connection", (ws) => {
 
       if (data.type === "project" && data.data) {
         const t = data.data.type;
-        // El contenido (versículos y citas) exige código; lo demás (sincronía de partes, fondo) pasa libre
         const necesitaAuth = (t === "verse" || t === "freeText");
         if (necesitaAuth && CODIGO_ACCESO && !ws.autorizado) return;
 
