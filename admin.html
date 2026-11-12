@@ -175,45 +175,13 @@
   }
   #clearButton { background:#ddd; color:#222; }
 
-  .status { padding:6px 12px 4px; font-size:13px; color:#666; display:flex; gap:12px; align-items:center; }
-  .status .lockbtn { margin-left:auto; background:none; border:none; color:#666; font-size:13px; cursor:pointer; text-decoration:underline; }
-
-  /* ===== CANDADO ===== */
-  #lockOverlay {
-    position:fixed; inset:0; z-index:100; background:#173f35;
-    display:flex; align-items:center; justify-content:center; padding:20px;
-  }
-  #lockOverlay.hidden { display:none; }
-  .lock-card { background:#fff; border-radius:16px; padding:30px 24px; max-width:360px; width:100%; text-align:center; }
-  .lock-title { font-family:'Montserrat', Arial, sans-serif; font-weight:900; font-size:22px; color:#173f35; margin-bottom:8px; }
-  .lock-card p { color:#666; font-size:15px; margin:0 0 16px; }
-  #lockInput {
-    width:100%; padding:14px; font-size:20px; text-align:center; letter-spacing:3px;
-    border:2px solid #ccc; border-radius:10px; outline:none; box-sizing:border-box;
-  }
-  #lockInput:focus { border-color:#173f35; }
-  #lockBtn {
-    width:100%; margin-top:14px; padding:14px; border:none; border-radius:10px;
-    background:#173f35; color:#fff; font-size:18px; font-weight:bold; cursor:pointer;
-  }
-  .lock-msg { margin-top:10px; color:#b91c1c; font-size:14px; font-weight:bold; min-height:18px; }
-</style>
+  .status { padding:6px 12px 4px; font-size:13px; color:#666; display:flex; gap:12px; align-items:center; }</style>
 </head>
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
   <span>v19 · <span id="connectedCount">0</span> conect.</span>
 </header>
-
-<div id="lockOverlay" class="hidden">
-  <div class="lock-card">
-    <div class="lock-title">🔒 Biblia Sincronizada</div>
-    <p>Ingresá el código que te dio el coordinador para poder proyectar.</p>
-    <input id="lockInput" type="password" autocomplete="off" placeholder="Código">
-    <button id="lockBtn">ENTRAR</button>
-    <div class="lock-msg" id="lockMsg"></div>
-  </div>
-</div>
 
 <div class="topbar">
   <select id="version"><option value="">Versión…</option></select>
@@ -293,7 +261,6 @@
 
 <div class="status">
   WebSocket: <span id="wsStatus">Conectando...</span>
-  <button class="lockbtn" id="cambiarCodigoBtn">🔒 cambiar código</button>
 </div>
 
 <script>
@@ -324,13 +291,7 @@
   const editVerseButton = document.getElementById("editVerseButton");
   const clearButton = document.getElementById("clearButton");
   const wsStatus = document.getElementById("wsStatus");
-  const connectedCount = document.getElementById("connectedCount");
-  const lockOverlay = document.getElementById("lockOverlay");
-  const lockInput = document.getElementById("lockInput");
-  const lockBtn = document.getElementById("lockBtn");
-  const lockMsg = document.getElementById("lockMsg");
-  const cambiarCodigoBtn = document.getElementById("cambiarCodigoBtn");
-  const predicaAddButton = document.getElementById("predicaAddButton");
+  const connectedCount = document.getElementById("connectedCount");  const predicaAddButton = document.getElementById("predicaAddButton");
   const vaciarPredicaBtn = document.getElementById("vaciarPredicaBtn");
   const predList = document.getElementById("predList");
   const predVacio = document.getElementById("predVacio");
@@ -399,41 +360,6 @@
     if (Array.isArray(rawPred)) predicaItems = rawPred.filter(p => p && p.bookName && Array.isArray(p.words)).slice(0, 60);
   } catch(e) { predicaItems = []; }
 
-  // ===== CANDADO =====
-  let codigoGuardado = "";
-  try { codigoGuardado = localStorage.getItem("codAcceso") || ""; } catch(e) {}
-  let esperandoAuth = false;
-
-  function mostrarLock(msg) {
-    lockMsg.textContent = msg || "";
-    lockOverlay.classList.remove("hidden");
-    setTimeout(() => lockInput.focus(), 100);
-  }
-  function ocultarLock() {
-    lockOverlay.classList.add("hidden");
-    lockInput.value = "";
-    lockMsg.textContent = "";
-  }
-  function enviarAuth() {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      esperandoAuth = true;
-      ws.send(JSON.stringify({ type: "auth", codigo: codigoGuardado }));
-    }
-  }
-  lockBtn.addEventListener("click", () => {
-    const c = lockInput.value.trim();
-    if (!c) { lockMsg.textContent = "Escribí el código."; return; }
-    codigoGuardado = c;
-    try { localStorage.setItem("codAcceso", c); } catch(e) {}
-    enviarAuth();
-  });
-  lockInput.addEventListener("keydown", (e) => { if (e.key === "Enter") lockBtn.click(); });
-  cambiarCodigoBtn.addEventListener("click", () => {
-    codigoGuardado = "";
-    try { localStorage.removeItem("codAcceso"); } catch(e) {}
-    mostrarLock("Si el coordinador cambió el código, ingresá el nuevo.");
-  });
-
   function escapeHtml(t) {
     return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
@@ -450,7 +376,6 @@
     ws = new WebSocket(`${p}//${location.host}`);
     ws.addEventListener("open", () => {
       wsStatus.textContent = "Conectado";
-      enviarAuth();
       try {
         const f = localStorage.getItem("adminFondo");
         if (f) enviarFondo(f);
@@ -462,14 +387,6 @@
       try {
         const data = JSON.parse(ev.data);
         if (data.type === "connected") { connectedCount.textContent = data.count; return; }
-        if (data.type === "auth-ok") { esperandoAuth = false; ocultarLock(); return; }
-        if (data.type === "auth-error") {
-          esperandoAuth = false;
-          codigoGuardado = "";
-          try { localStorage.removeItem("codAcceso"); } catch(e) {}
-          mostrarLock("Código incorrecto o vencido. Pedile el nuevo al coordinador.");
-          return;
-        }
         if (data.type === "projection") {
           const d = data.data || {};
           if (d.type === "parts-info" && curIdx >= 0) {
@@ -566,9 +483,7 @@
   }
 
   function proyectar(idx, part) {
-    if (idx < 0 || idx >= playlist.length) return;
-    if (esperandoAuth || !lockOverlay.classList.contains("hidden")) return;
-    if (idx !== curIdx) partesInfo = null;  // mismo versículo: se conserva la división real ya medida
+    if (idx < 0 || idx >= playlist.length) return;    if (idx !== curIdx) partesInfo = null;  // mismo versículo: se conserva la división real ya medida
     curIdx = idx;
     curPart = Math.max(0, part || 0);
     salirModoResaltar();
