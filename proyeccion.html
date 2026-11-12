@@ -74,12 +74,12 @@
     body.f-oscuro .reference, body.f-doodle-oscuro .reference { color: #7fd4b5; }
     body.f-azul .reference { color: #bcd7ff; }
 
-    /* CMG Sans Bold: letra grande y CENTRADA (10% de la altura = Holyrics '10') */
+    /* CMG Sans Bold: letra grande y CENTRADA (9% de la altura = Holyrics '9') */
     .text {
       width: 100%;
       max-height: 82vh;
       overflow-y: auto;
-      font-size: clamp(44px, 10vh, 220px);
+      font-size: clamp(44px, 9vh, 220px);
       font-weight: 700;
       line-height: 1.38;
       text-align: center;
@@ -257,7 +257,17 @@
     }
 
     /* Division estilo Holyrics: cada pantalla se LLENA hasta MAX_LINEAS lineas.
-       Busqueda binaria del pedazo mas grande que entra (mide con mideOK). */
+       Busqueda binaria del pedazo mas grande que entra (mide con mideOK).
+       El corte se atrasa al signo mas cercano (. , ; : ? !) para que ninguna
+       pantalla termine a mitad de una frase (ej: "el mes" / "segundo"). */
+    function corteConSigno(words, desde, mejor) {
+      const ventana = Math.max(3, Math.floor((mejor - desde) * 0.35));
+      const piso = Math.max(desde + 1, mejor - ventana);
+      for (let i = mejor - 1; i >= piso; i--) {
+        if (/[.,;:?!]$/.test(words[i].t)) return i + 1;
+      }
+      return mejor;
+    }
     function medirYDividir(words) {
       text.className = "text";
       if (mideOK(words, [0, words.length])) return [[0, words.length]];
@@ -271,6 +281,7 @@
           else hi = mid - 1;
         }
         if (mejor <= desde) mejor = desde + 1; // nunca avanza en cero
+        if (mejor < words.length) mejor = corteConSigno(words, desde, mejor);
         rangos.push([desde, mejor]);
         desde = mejor;
       }
@@ -361,7 +372,7 @@
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${location.host}`);
       ws.addEventListener("open", () => {
-        status.textContent = "Conectado · v19 CMG";
+        status.textContent = "Conectado · v20 CMG";
         status.classList.add("connected");
       });
       ws.addEventListener("close", () => {
