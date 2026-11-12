@@ -83,7 +83,6 @@
   .porder { min-width:30px; height:30px; border-radius:50%; background:#173f35; color:#fff; font-weight:bold; font-size:15px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; font-family:Arial; }
   .pmain { flex:1; min-width:0; }
   .predref { font-weight:bold; font-size:18px; color:#173f35; display:flex; align-items:center; gap:8px; font-family:'Montserrat', Arial, sans-serif; }
-  .predref .dot { width:11px; height:11px; border-radius:3px; display:inline-block; flex:0 0 auto; }
   .predmeta { font-size:12px; color:#888; margin-top:2px; font-family:Arial; }
   .delbtn { border:none; background:#fde8e8; color:#b91c1c; width:34px; height:34px; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; flex:0 0 auto; }
   .delbtn:active { background:#f8c9c9; }
@@ -100,13 +99,10 @@
 
   .btoolbar { display:flex; justify-content:flex-end; margin-bottom:6px; }
   .mini-btn { border:none; border-radius:9px; background:#173f35; color:#fff; font-size:14px; font-weight:bold; padding:8px 14px; cursor:pointer; }
-  .legend { display:flex; flex-wrap:wrap; gap:5px 14px; padding:2px 2px 10px; font-size:11px; color:#555; }
-  .legend span { display:flex; align-items:center; gap:4px; }
-  .legend i { width:11px; height:11px; border-radius:3px; display:inline-block; }
   .chipstrip { display:none; gap:6px; overflow-x:auto; padding:4px 2px 8px; }
   .chipstrip.has { display:flex; }
   .chiplabel { flex:0 0 auto; font-size:11px; color:#777; align-self:center; padding-right:2px; font-weight:bold; }
-  .chip { flex:0 0 auto; border-radius:8px; padding:8px 11px; color:#fff; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .chip { flex:0 0 auto; border-radius:8px; padding:8px 11px; background:#e3ece7; color:#173f35; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15); }
 
   .gr-title { grid-column: 1 / -1; font-weight:bold; color:#173f35; font-size:15px;
               letter-spacing:1.5px; padding:10px 2px 6px; border-bottom:3px solid #d8d3c8; margin-top:6px;
@@ -115,21 +111,14 @@
   .list-title { padding:10px 14px; background:#eef4f1; color:#173f35; font-weight:bold; font-size:14px; letter-spacing:1.5px; }
   .list-title.nt { background:#f3ecfb; color:#7b4bab; }
 
-  .bgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(64px, 1fr)); gap:6px; }
-  .bcell { position:relative; border-radius:10px; padding:15px 2px; text-align:center; color:#fff;
-           font-weight:bold; font-size:16px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.28);
-           font-family:'Montserrat', Arial, sans-serif; user-select:none; }
-  .bcell:hover { filter:brightness(1.12); }
-  .bcell .bknum { position:absolute; top:3px; left:6px; font-size:9px; opacity:.5; font-family:Arial; }
-  .bcell .bkfull { display:none; font-size:9px; font-weight:normal; opacity:.9; font-family:Arial; margin-top:1px; }
-  .bcell .star { position:absolute; top:2px; right:5px; font-size:11px; color:#ffe27a; text-shadow:0 1px 2px rgba(0,0,0,.5); display:none; }
+  .bgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:6px; }
+  .bcell { position:relative; border-radius:10px; padding:11px 4px; text-align:center; background:#e3ece7; color:#173f35;
+           font-weight:bold; font-size:12px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15);
+           font-family:'Montserrat', Arial, sans-serif; user-select:none; line-height:1.3; word-wrap:break-word; }
+  .bcell:hover { background:#d6e4dc; }
+  .bcell .star { position:absolute; top:2px; right:5px; font-size:11px; color:#b8860b; display:none; }
   .bcell.fav .star { display:block; }
-  .bcell.selected { outline:3px solid #173f35; outline-offset:2px; }
-  @media (min-width: 720px) {
-    .bgrid { grid-template-columns:repeat(13, 1fr); }
-    .bcell { padding:10px 2px; }
-    .bcell .bkfull { display:block; }
-  }
+  .bcell.selected { outline:3px solid #173f35; outline-offset:2px; background:#cfe0d8; }
   .hint { font-size:11px; color:#888; padding:8px 2px; }
 
   .book-row { padding:16px 14px; border-bottom:1px solid #e5e5e5; font-size:21px; color:#173f35; cursor:pointer; background:#fff; }
@@ -154,8 +143,6 @@
   .vtext mark { background:#ffe27a; padding:0 2px; border-radius:3px; }
   .search-ref { font-size:15px; font-weight:bold; color:#173f35; margin-bottom:4px; display:flex; align-items:center; gap:7px;
                 font-family:'Montserrat', Arial, sans-serif; }
-  .search-ref .dot { width:11px; height:11px; border-radius:3px; display:inline-block; flex:0 0 auto; }
-  .search-ref .bn { color:#888; font-weight:normal; font-family:Arial; font-size:13px; }
 
   .bottombar { position:fixed; bottom:0; left:0; right:0; max-width:1000px; margin:0 auto;
                background:rgba(244,241,234,0.97); border-top:1px solid #ddd; z-index:6; }
@@ -180,7 +167,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v19 · <span id="connectedCount">0</span> conect.</span>
+  <span>v20 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -216,7 +203,6 @@
     <div class="btoolbar">
       <button id="bookViewBtn" class="mini-btn">📋 Lista</button>
     </div>
-    <div class="legend" id="legend"></div>
     <div class="chipstrip" id="favStrip"></div>
     <div class="chipstrip" id="histStrip"></div>
     <div class="bgrid" id="bookGrid"></div>
@@ -311,25 +297,6 @@
     { id:"azul",          emoji:"🌃", label:"Azul noche",    dark:true }
   ];
 
-  const SECCIONES = [
-    { name:"Ley",               color:"#b35c1e", from:1,  to:5  },
-    { name:"Historia",          color:"#d68438", from:6,  to:17 },
-    { name:"Poéticos",          color:"#2f8f46", from:18, to:22 },
-    { name:"Profetas Mayores",  color:"#7b4bab", from:23, to:27 },
-    { name:"Profetas Menores",  color:"#4f7ecb", from:28, to:39 },
-    { name:"Evangelios",        color:"#c0392b", from:40, to:43 },
-    { name:"Hechos",            color:"#d16a9e", from:44, to:44 },
-    { name:"Cartas de Pablo",   color:"#4557c0", from:45, to:57 },
-    { name:"Cartas Generales",  color:"#2a9d8f", from:58, to:65 },
-    { name:"Apocalipsis",       color:"#8e44ad", from:66, to:66 }
-  ];
-  const ABBR = ["Gn","Ex","Lv","Nm","Dt","Js","Jz","Rt","1S","2S","1R","2R","1Cr","2Cr","Esd","Neh","Est","Job","Sal","Pr","Ec","Ct","Is","Jr","Lm","Ez","Dn","Os","Jl","Am","Ob","Jon","Mi","Nah","Hab","Sof","Hag","Zac","Mal","Mt","Mr","Lc","Jn","Hch","Ro","1Co","2Co","Gá","Ef","Fil","Col","1Ts","2Ts","1Ti","2Ti","Tit","Flm","Heb","Stg","1P","2P","1Jn","2Jn","3Jn","Jud","Ap"];
-  function seccionDe(n) {
-    return SECCIONES.find(s => n >= s.from && n <= s.to) || { name:"Libro", color:"#607d8b" };
-  }
-  function abreviar(n) {
-    return (n >= 1 && n <= 66) ? ABBR[n-1] : "?";
-  }
 
   let ws = null;
   let playlist = [];
@@ -685,15 +652,14 @@
       const div = document.createElement("div");
       div.className = "predica-item";
       div.dataset.i = i;
-      const s = seccionDe(p.bookNumber);
-      const meta = [s.name, p.version].filter(Boolean).join(" · ");
+      const meta = p.version || "";
       const num = document.createElement("span");
       num.className = "porder";
       num.textContent = i + 1;
       const main = document.createElement("div");
       main.className = "pmain";
-      main.innerHTML = `<div class="predref"><i class="dot" style="background:${s.color}"></i>${escapeHtml(p.bookName)} ${p.chapter}:${p.verse}</div>` +
-                       `<div class="predmeta">· ${escapeHtml(meta)}</div>`;
+      main.innerHTML = `<div class="predref">${escapeHtml(p.bookName)} ${p.chapter}:${p.verse}</div>` +
+                       (meta ? `<div class="predmeta">· ${escapeHtml(meta)}</div>` : "");
       const del = document.createElement("button");
       del.className = "delbtn";
       del.textContent = "✕";
@@ -805,8 +771,7 @@
     lista.forEach(bk => {
       const c = document.createElement("div");
       c.className = "chip";
-      c.style.background = seccionDe(bk.n).color;
-      c.textContent = abreviar(bk.n);
+      c.textContent = bk.name;
       c.title = bk.name;
       c.addEventListener("click", () => alTocar(bk));
       strip.appendChild(c);
@@ -830,17 +795,6 @@
     if (historial.length > 6) historial.pop();
     guardarFavHist(); pintarFranjas();
   }
-
-  function pintarLeyenda() {
-    const leg = document.getElementById("legend");
-    leg.innerHTML = "";
-    SECCIONES.forEach(s => {
-      const sp = document.createElement("span");
-      sp.innerHTML = `<i style="background:${s.color}"></i>${s.name}`;
-      leg.appendChild(sp);
-    });
-  }
-  pintarLeyenda();
 
   function abrirLibro(num, name) {
     elegirLibro({ book_number: num, book_name: name });
@@ -882,13 +836,11 @@
         tNt.textContent = "✝️ NUEVO TESTAMENTO";
         bookGrid.appendChild(tNt);
       }
-      const s = seccionDe(b.book_number);
       const d = document.createElement("div");
       d.className = "bcell" + (favoritos.some(f => f.n === b.book_number) ? " fav" : "");
       d.dataset.bn = b.book_number;
-      d.style.background = s.color;
-      d.title = b.book_name + " — " + s.name;
-      d.innerHTML = `<span class="bknum">${b.book_number}</span>${escapeHtml(abreviar(b.book_number))}<span class="bkfull">${escapeHtml(b.book_name)}</span><span class="star">★</span>`;
+      d.title = b.book_name;
+      d.innerHTML = `${escapeHtml(b.book_name)}<span class="star">★</span>`;
       let pressTimer = null, longPress = false;
       d.addEventListener("touchstart", () => {
         longPress = false;
@@ -918,8 +870,7 @@
       }
       const d = document.createElement("div");
       d.className = "book-row";
-      const s = seccionDe(b.book_number);
-      d.innerHTML = `<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${s.color};margin-right:8px;"></span>${escapeHtml(b.book_name)}`;
+      d.innerHTML = `${escapeHtml(b.book_name)}`;
       d.addEventListener("click", () => elegirLibro(b));
       bookList.appendChild(d);
     });
@@ -1028,9 +979,8 @@
       const contenido = document.createElement("div");
       contenido.className = "vcontenido";
       if (conReferencia) {
-        const s = seccionDe(it.bookNumber);
         contenido.innerHTML =
-          `<div class="search-ref"><i class="dot" style="background:${s.color}"></i>${abreviar(it.bookNumber)} ${it.chapter}:${it.verse} <span class="bn">· ${escapeHtml(it.bookName)} · ${s.name}</span></div>` +
+          `<div class="search-ref">${escapeHtml(it.bookName)} ${it.chapter}:${it.verse}</div>` +
           `<div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
       } else {
         contenido.innerHTML = `<div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
