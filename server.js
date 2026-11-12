@@ -9,10 +9,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 8090;
-const CODIGO_ACCESO = String(process.env.CODIGO_ACCESO || "").trim();
-if (!CODIGO_ACCESO) {
-  console.log("AVISO: CODIGO_ACCESO no definida en Render — la app está abierta (sin código).");
-}
+// Sin código de acceso: el nombre de la iglesia (la sala) es la única clave.
 
 const db = new sqlite3.Database(
   path.join(__dirname, "biblia.db"),
@@ -126,7 +123,6 @@ function broadcastCount() {
 
 wss.on("connection", (ws) => {
   ws.isAlive = true;
-  ws.autorizado = false;
   ws.on("pong", () => { ws.isAlive = true; });
   broadcastCount();
 
@@ -135,25 +131,12 @@ wss.on("connection", (ws) => {
       const data = JSON.parse(message.toString());
 
       if (data.type === "auth") {
-        if (!CODIGO_ACCESO) {
-          ws.autorizado = true;
-          ws.send(JSON.stringify({ type: "auth-ok", abierto: true }));
-          return;
-        }
-        if (String(data.codigo || "").trim() === CODIGO_ACCESO) {
-          ws.autorizado = true;
-          ws.send(JSON.stringify({ type: "auth-ok" }));
-        } else {
-          ws.autorizado = false;
-          ws.send(JSON.stringify({ type: "auth-error" }));
-        }
+        // Sin código: responde OK para que celulares con admin.html viejo no se traben.
+        ws.send(JSON.stringify({ type: "auth-ok", abierto: true }));
         return;
       }
 
       if (data.type === "project" && data.data) {
-        const t = data.data.type;
-        const necesitaAuth = (t === "verse" || t === "freeText");
-        if (necesitaAuth && CODIGO_ACCESO && !ws.autorizado) return;
 
         const out = JSON.stringify({ type: "projection", data: data.data });
         wss.clients.forEach((c) => {
