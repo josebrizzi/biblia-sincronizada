@@ -86,6 +86,9 @@
   .predmeta { font-size:12px; color:#888; margin-top:2px; font-family:Arial; }
   .delbtn { border:none; background:#fde8e8; color:#b91c1c; width:34px; height:34px; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; flex:0 0 auto; }
   .delbtn:active { background:#f8c9c9; }
+  .mvbtn { border:none; background:#eef4f1; color:#173f35; width:30px; height:34px; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; flex:0 0 auto; font-family:Arial; }
+  .mvbtn:active { background:#dcebe3; }
+  .mvbtn:disabled { opacity:.35; cursor:default; }
   .pred-vacio { color:#999; font-size:14px; text-align:center; padding:26px 16px; line-height:1.7; background:#fff; border:1px dashed #ccc; border-radius:10px; }
   .addbtn { border:none; background:#eef4f1; color:#173f35; border-radius:8px; padding:9px 11px; font-size:16px; cursor:pointer; flex:0 0 auto; align-self:center; font-weight:bold; }
   .addbtn.en-lista { background:#c8e6c9; color:#1b5e20; }
@@ -102,7 +105,7 @@
   .chipstrip { display:none; gap:6px; overflow-x:auto; padding:4px 2px 8px; }
   .chipstrip.has { display:flex; }
   .chiplabel { flex:0 0 auto; font-size:11px; color:#777; align-self:center; padding-right:2px; font-weight:bold; }
-  .chip { flex:0 0 auto; border-radius:8px; padding:8px 11px; background:#e3ece7; color:#173f35; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15); }
+  .chip { flex:0 0 auto; border-radius:8px; padding:8px 11px; background:#e6e6e6; color:#173f35; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15); }
 
   .gr-title { grid-column: 1 / -1; font-weight:bold; color:#173f35; font-size:15px;
               letter-spacing:1.5px; padding:10px 2px 6px; border-bottom:3px solid #d8d3c8; margin-top:6px;
@@ -112,13 +115,13 @@
   .list-title.nt { background:#f3ecfb; color:#7b4bab; }
 
   .bgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:6px; }
-  .bcell { position:relative; border-radius:10px; padding:12px 6px; text-align:center; background:#e3ece7; color:#173f35;
+  .bcell { position:relative; border-radius:10px; padding:12px 6px; text-align:center; background:#e6e6e6; color:#173f35;
            font-weight:bold; font-size:18px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15);
            font-family:'Montserrat', Arial, sans-serif; user-select:none; line-height:1.3; word-wrap:break-word; }
-  .bcell:hover { background:#d6e4dc; }
+  .bcell:hover { background:#d9d9d9; }
   .bcell .star { position:absolute; top:2px; right:5px; font-size:11px; color:#b8860b; display:none; }
   .bcell.fav .star { display:block; }
-  .bcell.selected { outline:3px solid #173f35; outline-offset:2px; background:#cfe0d8; }
+  .bcell.selected { outline:3px solid #173f35; outline-offset:2px; background:#cfcfcf; }
   .hint { font-size:11px; color:#888; padding:8px 2px; }
 
   .book-row { padding:16px 14px; border-bottom:1px solid #e5e5e5; font-size:21px; color:#173f35; cursor:pointer; background:#fff; }
@@ -167,7 +170,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v22 · <span id="connectedCount">0</span> conect.</span>
+  <span>v23 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -204,7 +207,6 @@
       <button id="bookViewBtn" class="mini-btn">📋 Lista</button>
     </div>
     <div class="chipstrip" id="favStrip"></div>
-    <div class="chipstrip" id="histStrip"></div>
     <div class="bgrid" id="bookGrid"></div>
     <div class="hint">Tocá un libro para ver sus capítulos · Mantené presionado (o clic derecho) para ⭐ favorito</div>
     <div id="bookList"></div>
@@ -255,7 +257,6 @@
   const bookList = document.getElementById("bookList");
   const bookViewBtn = document.getElementById("bookViewBtn");
   const favStrip = document.getElementById("favStrip");
-  const histStrip = document.getElementById("histStrip");
   const chapterGrid = document.getElementById("chapterGrid");
   const verseGrid = document.getElementById("verseGrid");
   const verseList = document.getElementById("verseList");
@@ -660,6 +661,18 @@
       main.className = "pmain";
       main.innerHTML = `<div class="predref">${escapeHtml(p.bookName)} ${p.chapter}:${p.verse}</div>` +
                        (meta ? `<div class="predmeta">· ${escapeHtml(meta)}</div>` : "");
+      const up = document.createElement("button");
+      up.className = "mvbtn";
+      up.textContent = "▲";
+      up.title = "Subir";
+      up.disabled = i === 0;
+      up.addEventListener("click", (e) => { e.stopPropagation(); moverPredica(i, -1); });
+      const dn = document.createElement("button");
+      dn.className = "mvbtn";
+      dn.textContent = "▼";
+      dn.title = "Bajar";
+      dn.disabled = i === predicaItems.length - 1;
+      dn.addEventListener("click", (e) => { e.stopPropagation(); moverPredica(i, 1); });
       const del = document.createElement("button");
       del.className = "delbtn";
       del.textContent = "✕";
@@ -667,6 +680,8 @@
       del.addEventListener("click", (e) => { e.stopPropagation(); borrarPredica(i); });
       div.appendChild(num);
       div.appendChild(main);
+      div.appendChild(up);
+      div.appendChild(dn);
       div.appendChild(del);
       div.addEventListener("click", () => proyectarPredica(i));
       predList.appendChild(div);
@@ -710,6 +725,21 @@
     }
     marcarSeleccion();
     if (p) toast("🗑️ " + p.bookName + " " + p.chapter + ":" + p.verse + " quitado");
+  }
+  function moverPredica(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= predicaItems.length) return;
+    const p = predicaItems.splice(i, 1)[0];
+    predicaItems.splice(j, 0, p);
+    guardarPredica();
+    pintarPredica();
+    refrescarAddBtns();
+    if (enPredica) {
+      playlist = clonarPredica();
+      if (curIdx === i) curIdx = j;
+      else if (curIdx === j) curIdx = i;
+    }
+    marcarSeleccion();
   }
   function proyectarPredica(i) {
     if (i < 0 || i >= predicaItems.length) return;
@@ -779,7 +809,6 @@
   }
   function pintarFranjas() {
     pintarChip(favStrip, "★", favoritos, (bk) => abrirLibro(bk.n, bk.name));
-    pintarChip(histStrip, "🕘", historial, (bk) => abrirLibro(bk.n, bk.name));
   }
   function toggleFavorito(n, name) {
     const i = favoritos.findIndex(f => f.n === n);
