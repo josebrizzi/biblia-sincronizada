@@ -100,7 +100,6 @@
   .tabpage { display:none; padding:10px 12px 150px; }
   .tabpage.active { display:block; }
 
-  .btoolbar { display:flex; justify-content:flex-end; margin-bottom:6px; }
   .mini-btn { border:none; border-radius:9px; background:#173f35; color:#fff; font-size:14px; font-weight:bold; padding:8px 14px; cursor:pointer; }
   .chipstrip { display:none; gap:6px; overflow-x:auto; padding:4px 2px 8px; }
   .chipstrip.has { display:flex; }
@@ -111,23 +110,17 @@
               letter-spacing:1.5px; padding:10px 2px 6px; border-bottom:3px solid #d8d3c8; margin-top:6px;
               font-family:'Montserrat', Arial, sans-serif; }
   .gr-title.nt { color:#7b4bab; border-bottom-color:#d9c8ef; }
-  .list-title { padding:10px 14px; background:#eef4f1; color:#173f35; font-weight:bold; font-size:14px; letter-spacing:1.5px; }
-  .list-title.nt { background:#f3ecfb; color:#7b4bab; }
 
   .bgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:6px; }
-  .bcell { position:relative; border-radius:10px; padding:12px 6px; text-align:center; background:#e6e6e6; color:#173f35;
-           font-weight:bold; font-size:18px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15);
+  .bcell { position:relative; border-radius:10px; padding:12px 6px; text-align:center; background:#8b8f8d; color:#fff;
+           font-weight:bold; font-size:18px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.25);
            font-family:'Montserrat', Arial, sans-serif; user-select:none; line-height:1.3; word-wrap:break-word; }
-  .bcell:hover { background:#d9d9d9; }
-  .bcell .star { position:absolute; top:2px; right:5px; font-size:11px; color:#b8860b; display:none; }
+  .bcell:hover { filter:brightness(1.12); }
+  .bcell .star { position:absolute; top:2px; right:5px; font-size:12px; color:#ffe27a; text-shadow:0 1px 2px rgba(0,0,0,.5); display:none; }
   .bcell.fav .star { display:block; }
-  .bcell.selected { outline:3px solid #173f35; outline-offset:2px; background:#cfcfcf; }
+  .bcell.selected { outline:3px solid #173f35; outline-offset:2px; }
   .hint { font-size:11px; color:#888; padding:8px 2px; }
 
-  .book-row { padding:16px 14px; border-bottom:1px solid #e5e5e5; font-size:21px; color:#173f35; cursor:pointer; background:#fff; }
-  .book-row:hover { background:#f0f5f2; }
-  #bookList { display:none; }
-  #bookList.visible { display:block; border:1px solid #ddd; border-radius:10px; overflow:hidden; }
 
   .vtoolbar { display:flex; justify-content:flex-end; margin-bottom:8px; }
   .grid-num { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
@@ -170,7 +163,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v23 · <span id="connectedCount">0</span> conect.</span>
+  <span>v24 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -203,13 +196,9 @@
 
 <main>
   <section class="tabpage active" id="page-libro">
-    <div class="btoolbar">
-      <button id="bookViewBtn" class="mini-btn">📋 Lista</button>
-    </div>
     <div class="chipstrip" id="favStrip"></div>
     <div class="bgrid" id="bookGrid"></div>
     <div class="hint">Tocá un libro para ver sus capítulos · Mantené presionado (o clic derecho) para ⭐ favorito</div>
-    <div id="bookList"></div>
   </section>
   <section class="tabpage" id="page-capitulo">
     <div class="grid-num" id="chapterGrid"></div>
@@ -254,8 +243,6 @@
 <script>
   const versionSelect = document.getElementById("version");
   const bookGrid = document.getElementById("bookGrid");
-  const bookList = document.getElementById("bookList");
-  const bookViewBtn = document.getElementById("bookViewBtn");
   const favStrip = document.getElementById("favStrip");
   const chapterGrid = document.getElementById("chapterGrid");
   const verseGrid = document.getElementById("verseGrid");
@@ -846,6 +833,21 @@
     }
   }
 
+  const SECCIONES = [
+    { name:"Ley",              color:"#b35c1e", from:1,  to:5  },
+    { name:"Historia",         color:"#a97a10", from:6,  to:17 },
+    { name:"Poéticos",         color:"#2f8f46", from:18, to:22 },
+    { name:"Profetas Mayores", color:"#7b4bab", from:23, to:27 },
+    { name:"Profetas Menores", color:"#4f7ecb", from:28, to:39 },
+    { name:"Evangelios",       color:"#c0392b", from:40, to:43 },
+    { name:"Hechos",           color:"#cc5a92", from:44, to:44 },
+    { name:"Cartas de Pablo",  color:"#4557c0", from:45, to:57 },
+    { name:"Cartas Generales", color:"#279488", from:58, to:65 },
+    { name:"Apocalipsis",      color:"#8e44ad", from:66, to:66 }
+  ];
+  function seccionDe(n) {
+    return SECCIONES.find(s => n >= s.from && n <= s.to) || { name:"Libro", color:"#8b8f8d" };
+  }
   async function cargarLibros() {
     const r = await fetch("./api/books?version=" + encodeURIComponent(versionSelect.value));
     const books = await r.json();
@@ -865,10 +867,12 @@
         tNt.textContent = "✝️ NUEVO TESTAMENTO";
         bookGrid.appendChild(tNt);
       }
+      const s = seccionDe(b.book_number);
       const d = document.createElement("div");
       d.className = "bcell" + (favoritos.some(f => f.n === b.book_number) ? " fav" : "");
       d.dataset.bn = b.book_number;
       d.title = b.book_name;
+      d.style.background = s.color;
       d.innerHTML = `${escapeHtml(b.book_name)}<span class="star">★</span>`;
       let pressTimer = null, longPress = false;
       d.addEventListener("touchstart", () => {
@@ -885,24 +889,6 @@
       bookGrid.appendChild(d);
     });
 
-    bookList.innerHTML = "";
-    let tL = document.createElement("div");
-    tL.className = "list-title";
-    tL.textContent = "✝️ ANTIGUO TESTAMENTO";
-    bookList.appendChild(tL);
-    books.forEach(b => {
-      if (b.book_number === 40) {
-        tL = document.createElement("div");
-        tL.className = "list-title nt";
-        tL.textContent = "✝️ NUEVO TESTAMENTO";
-        bookList.appendChild(tL);
-      }
-      const d = document.createElement("div");
-      d.className = "book-row";
-      d.innerHTML = `${escapeHtml(b.book_name)}`;
-      d.addEventListener("click", () => elegirLibro(b));
-      bookList.appendChild(d);
-    });
     pintarFranjas();
   }
 
@@ -925,12 +911,6 @@
       chapterGrid.appendChild(cell);
     });
   }
-
-  bookViewBtn.addEventListener("click", () => {
-    const enLista = bookList.classList.toggle("visible");
-    bookGrid.style.display = enLista ? "none" : "grid";
-    bookViewBtn.textContent = enLista ? "🎨 Cuadrícula" : "📋 Lista";
-  });
 
   async function elegirCapitulo(c, cell) {
     chapterGrid.querySelectorAll(".numcell").forEach(e => e.classList.remove("selected"));
@@ -1128,9 +1108,6 @@
     enPredica = false;
     pintarPredica();
     bookGrid.innerHTML = "";
-    bookList.innerHTML = ""; bookList.classList.remove("visible");
-    bookGrid.style.display = "grid";
-    bookViewBtn.textContent = "📋 Lista";
     chapterGrid.innerHTML = ""; verseGrid.innerHTML = ""; verseList.innerHTML = ""; resultList.innerHTML = "";
     searchInput.value = ""; searchInfo.style.display = "none";
     tabEstado("capitulo", false); tabEstado("versiculo", false); tabEstado("busqueda", false);
