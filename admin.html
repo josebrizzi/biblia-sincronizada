@@ -164,7 +164,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v25 · <span id="connectedCount">0</span> conect.</span>
+  <span>v26 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -298,6 +298,7 @@
   let selectedBookName = "";
   let currentBookNumber = null;
   let ultimoTab = "libro";
+  let tabActiva = "libro";  // v26: para no repetir marcarSeleccion al reactivar la misma pestana
   let modoResaltar = false;
   let qBusqueda = "";
   let fondoActual = "claro";
@@ -1043,7 +1044,16 @@
       el.classList.toggle("selected", enPredica && Number(el.dataset.i) === curIdx);
     });
     const sel = document.querySelector(".verse.selected, .predica-item.selected");
-    if (sel) sel.scrollIntoView({ block: sel.classList.contains("predica-item") ? "center" : "nearest" });
+    // v26: sin salto al versiculo elegido. Si lo proyectado ya esta a la vista, la
+    // lista NO se mueve ni un pixel; si quedo tapado por la barra de abajo o por las
+    // pestanas (o fuera de pantalla), la vista se desplaza SUAVE y solo lo necesario.
+    if (sel && sel.getClientRects().length) {
+      const r = sel.getBoundingClientRect();
+      let dy = 0;
+      if (r.top < 56) dy = r.top - 56;
+      else if (r.bottom > window.innerHeight - 190) dy = r.bottom - (window.innerHeight - 190);
+      if (dy !== 0) window.scrollTo({ top: window.scrollY + dy, behavior: "smooth" });
+    }
   }
 
   function verLista() {
@@ -1062,10 +1072,12 @@
   });
 
   function activarTab(name) {
+    const yaActiva = tabActiva === name;
     document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
     document.querySelectorAll(".tabpage").forEach(p => p.classList.toggle("active", p.id === "page-" + name));
     if (name !== "busqueda") ultimoTab = name;
-    marcarSeleccion();  // al cambiar de pestana la lista sigue al versiculo en curso
+    tabActiva = name;
+    if (!yaActiva) marcarSeleccion();  // al ENTRAR a una pestana la lista sigue al versiculo en curso
   }
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => activarTab(t.dataset.tab)));
   function tabEstado(name, habilitado) {
