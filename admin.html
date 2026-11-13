@@ -80,6 +80,7 @@
   .predica-item:last-child { border-bottom:none; }
   .predica-item:hover { background:#f4f7f5; }
   .predica-item.selected { background:#c8e6c9; }
+  .ppartes { font-size:11px; color:#b45309; font-weight:bold; margin-top:2px; }
   .porder { min-width:30px; height:30px; border-radius:50%; background:#173f35; color:#fff; font-weight:bold; font-size:15px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; font-family:Arial; }
   .pmain { flex:1; min-width:0; }
   .predref { font-weight:bold; font-size:18px; color:#173f35; display:flex; align-items:center; gap:8px; font-family:'Montserrat', Arial, sans-serif; }
@@ -163,7 +164,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v24 · <span id="connectedCount">0</span> conect.</span>
+  <span>v25 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -290,6 +291,7 @@
   let playlist = [];
   let curIdx = -1;
   let curPart = 0;
+  let pidEnvio = 0, pidUltimo = 0;  // anti-eco: ignora parts-info viejos (bug "vuelve a la parte A")
   let partesInfo = null;
   let colaProxima = [];  // próximas partes del versículo y versículo siguiente
   let touchX0 = null, touchY0 = null, swipeBloqueado = false, swipeHecho = false;
@@ -346,7 +348,9 @@
           const d = data.data || {};
           if (d.type === "parts-info" && curIdx >= 0) {
             const v = playlist[curIdx];
-            if (v && Number(d.verse) === Number(v.verse) && Number(d.chapter) === Number(v.chapter)) {
+            if (v && Number(d.verse) === Number(v.verse) && Number(d.chapter) === Number(v.chapter)
+                && (d.bookNumber === undefined || Number(d.bookNumber) === Number(v.bookNumber))
+                && (d.pid === undefined || Number(d.pid) === Number(pidUltimo))) {
               partesInfo = { count: d.count, ranges: d.ranges || null };
               curPart = Math.min((d.current || 1) - 1, d.count - 1);
               actualizarPreview(); marcarSeleccion();
@@ -444,6 +448,8 @@
     salirModoResaltar();
     const it = playlist[curIdx];
     if (ws && ws.readyState === WebSocket.OPEN) {
+      const pid = ++pidEnvio;
+      pidUltimo = pid;
       ws.send(JSON.stringify({
         type: "project",
         reference: it.referencia,
@@ -452,7 +458,9 @@
           words: it.words,
           part: curPart,
           version: it.version, bookName: it.bookName,
-          chapter: it.chapter, verse: it.verse
+          bookNumber: it.bookNumber,
+          chapter: it.chapter, verse: it.verse,
+          pid: pid
         }
       }));
     }
@@ -559,11 +567,14 @@
       window.scrollTo(0, 0);
       it.words = it.words.map(w => ({ t: w.t, h: "" }));
       if (ws && ws.readyState === WebSocket.OPEN) {
+        const pid = ++pidEnvio;
+        pidUltimo = pid;
         ws.send(JSON.stringify({
           type: "project",
           reference: it.referencia,
           data: { type: "verse", words: it.words, part: curPart,
                   version: it.version, bookName: it.bookName,
+                  bookNumber: it.bookNumber, pid: pid,
                   chapter: it.chapter, verse: it.verse }
         }));
       }
@@ -588,11 +599,14 @@
     }
     const it = playlist[curIdx];
     if (ws && ws.readyState === WebSocket.OPEN) {
+      const pid = ++pidEnvio;
+      pidUltimo = pid;
       ws.send(JSON.stringify({
         type: "project",
         reference: it.referencia,
         data: { type: "verse", words: it.words, part: curPart,
                 version: it.version, bookName: it.bookName,
+                bookNumber: it.bookNumber, pid: pid,
                 chapter: it.chapter, verse: it.verse }
       }));
     }
@@ -640,6 +654,7 @@
       const div = document.createElement("div");
       div.className = "predica-item";
       div.dataset.i = i;
+      const nEst = partirEstimado(p.words).length;
       const meta = p.version || "";
       const num = document.createElement("span");
       num.className = "porder";
@@ -647,6 +662,7 @@
       const main = document.createElement("div");
       main.className = "pmain";
       main.innerHTML = `<div class="predref">${escapeHtml(p.bookName)} ${p.chapter}:${p.verse}</div>` +
+                       (nEst > 1 ? `<div class="ppartes">✂️ ${nEst} partes</div>` : "") +
                        (meta ? `<div class="predmeta">· ${escapeHtml(meta)}</div>` : "");
       const up = document.createElement("button");
       up.className = "mvbtn";
@@ -1027,7 +1043,7 @@
       el.classList.toggle("selected", enPredica && Number(el.dataset.i) === curIdx);
     });
     const sel = document.querySelector(".verse.selected, .predica-item.selected");
-    if (sel) sel.scrollIntoView({ block: "nearest" });
+    if (sel) sel.scrollIntoView({ block: sel.classList.contains("predica-item") ? "center" : "nearest" });
   }
 
   function verLista() {
@@ -1049,6 +1065,7 @@
     document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
     document.querySelectorAll(".tabpage").forEach(p => p.classList.toggle("active", p.id === "page-" + name));
     if (name !== "busqueda") ultimoTab = name;
+    marcarSeleccion();  // al cambiar de pestana la lista sigue al versiculo en curso
   }
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => activarTab(t.dataset.tab)));
   function tabEstado(name, habilitado) {
