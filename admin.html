@@ -79,7 +79,15 @@
   .predica-item { display:flex; gap:10px; align-items:center; padding:13px 12px; border-bottom:1px solid #e8e8e8; cursor:pointer; background:#fff; }
   .predica-item:last-child { border-bottom:none; }
   .predica-item:hover { background:#f4f7f5; }
-  .predica-item.selected { background:#c8e6c9; }
+  /* v27: en predicacion el proyectado se distingue con OTRO color (azul) */
+  .predica-item.selected { background:#1d4ed8; }
+  .predica-item.selected .predref { color:#fff; }
+  .predica-item.selected .porder { background:#fff; color:#1d4ed8; }
+  .predica-item.selected .ppartes { color:#fde68a; }
+  .predica-item.selected .predmeta { color:#dbeafe; }
+  .predica-item.selected .predtext { color:#fff; }
+  /* v27: texto completo del versiculo en cada item de la lista de predicacion */
+  .predtext { font-size:16px; line-height:1.5; margin-top:3px; color:#333; font-family:Arial; overflow-wrap:break-word; }
   .ppartes { font-size:11px; color:#b45309; font-weight:bold; margin-top:2px; }
   .porder { min-width:30px; height:30px; border-radius:50%; background:#173f35; color:#fff; font-weight:bold; font-size:15px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; font-family:Arial; }
   .pmain { flex:1; min-width:0; }
@@ -133,10 +141,16 @@
   .verse { display:flex; gap:10px; padding:12px; border-bottom:1px solid #e8e8e8; cursor:pointer; background:#fff; }
   .verse:last-child { border-bottom:none; }
   .verse:hover { background:#f4f7f5; }
-  .verse.selected { background:#c8e6c9; }
+  /* v27: el versiculo proyectado, resaltado EN LA LISTA (verde, blanco, negrita) */
+  .verse.selected { background:#15803d; }
+  .verse.selected .vnum { color:#fff; }
+  .verse.selected .vtext { color:#fff; font-weight:bold; }
+  .verse.selected .search-ref { color:#fff; }
+  .verse.selected .vtext mark { color:#173f35; }
   /* .verse.ref ahora es flex para alojar el botón ➕ */
   .vnum { min-width:30px; font-weight:bold; color:#173f35; font-size:18px; }
-  .vtext { font-size:19px; line-height:1.5; }
+  /* v27: letra un poco mas grande en la lista del capitulo */
+  .vtext { font-size:21px; line-height:1.5; overflow-wrap:break-word; }
   .vtext mark { background:#ffe27a; padding:0 2px; border-radius:3px; }
   .search-ref { font-size:15px; font-weight:bold; color:#173f35; margin-bottom:4px; display:flex; align-items:center; gap:7px;
                 font-family:'Montserrat', Arial, sans-serif; }
@@ -164,7 +178,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v26 · <span id="connectedCount">0</span> conect.</span>
+  <span>v27 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -208,7 +222,7 @@
     <div class="vtoolbar">
       <button id="dotsButton" class="mini-btn">⋮ Lista</button>
     </div>
-    <div class="hint">Mantené presionado (o clic derecho) un número para ➕ agregarlo a la predicación</div>
+    <div class="hint">Mantené presionado (o clic derecho) un número para ➕ agregarlo a la predicación · Tocá de nuevo el versículo proyectado (verde) para pasar a su parte siguiente ✂️</div>
     <div class="grid-num" id="verseGrid"></div>
     <div class="vlist" id="verseList" style="display:none;"></div>
   </section>
@@ -219,7 +233,7 @@
     </div>
     <div id="predList"></div>
     <div class="pred-vacio" id="predVacio">Todavía no agregaste versículos.<br>Tocá <b>➕</b> en un versículo de la lista, mantené presionado un número de la cuadrícula, o proyectá un versículo y tocá <b>➕ Predicación</b> abajo.<br>Se guardan en el orden en que los elegís.</div>
-    <div class="hint">Tocá un versículo para proyectarlo · ✕ lo saca de la lista · La lista queda guardada en este equipo</div>
+    <div class="hint">Tocá un versículo para proyectarlo (queda azul en la lista) · Tocá de nuevo el proyectado para pasar a su parte siguiente ✂️ · ✕ lo saca de la lista · La lista queda guardada en este equipo</div>
   </section>
   <section class="tabpage" id="page-busqueda">
     <div class="vlist" id="resultList" style="margin-top:0;"></div>
@@ -293,6 +307,7 @@
   let curPart = 0;
   let pidEnvio = 0, pidUltimo = 0;  // anti-eco: ignora parts-info viejos (bug "vuelve a la parte A")
   let partesInfo = null;
+  let hayProyeccion = false;  // v27: hay algo enviado a la pantalla (aunque la playlist cambie)
   let colaProxima = [];  // próximas partes del versículo y versículo siguiente
   let touchX0 = null, touchY0 = null, swipeBloqueado = false, swipeHecho = false;
   let selectedBookName = "";
@@ -409,6 +424,7 @@
     editVerseButton.textContent = "🖍️ Resaltar";
     preview.classList.remove("resaltando");
     document.body.classList.remove("resaltando");
+    actualizarVisibilidadPreview();  // v27
   }
 
   function partirEstimado(words) {
@@ -446,6 +462,7 @@
     if (idx < 0 || idx >= playlist.length) return;    if (idx !== curIdx) partesInfo = null;  // mismo versículo: se conserva la división real ya medida
     curIdx = idx;
     curPart = Math.max(0, part || 0);
+    hayProyeccion = true;  // v27
     salirModoResaltar();
     const it = playlist[curIdx];
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -468,9 +485,20 @@
     actualizarPreview(); marcarSeleccion();
   }
 
+  // v27: en las vistas de LISTA (lista del capitulo, predicacion, busqueda) el
+  // recuadro verde de arriba se OCULTA: el versiculo proyectado ya queda resaltado
+  // en la lista y verlo dos veces (arriba en verde + en la lista) confundia.
+  // Sigue visible en cuadricula / libro / capitulo y en el modo Resaltar.
+  function previewEnLista() {
+    if (tabActiva === "predica" || tabActiva === "busqueda") return true;
+    return tabActiva === "versiculo" && verseList.style.display !== "none";
+  }
+  function actualizarVisibilidadPreview() {
+    preview.style.display = (hayProyeccion && (modoResaltar || !previewEnLista())) ? "flex" : "none";
+  }
   function actualizarPreview() {
-    if (curIdx < 0) { preview.style.display = "none"; editVerseButton.disabled = true; predicaAddButton.disabled = true; return; }
-    preview.style.display = "flex";
+    if (curIdx < 0) { actualizarVisibilidadPreview(); editVerseButton.disabled = true; predicaAddButton.disabled = true; return; }
+    actualizarVisibilidadPreview();
     preview.classList.toggle("resaltando", modoResaltar);
     const it = playlist[curIdx];
     const ranges = rangesDe(it);
@@ -662,8 +690,10 @@
       num.textContent = i + 1;
       const main = document.createElement("div");
       main.className = "pmain";
+      const texto = p.words.map(w => w.t).join(" ");  // v27: el versiculo entero, no solo la mencion
       main.innerHTML = `<div class="predref">${escapeHtml(p.bookName)} ${p.chapter}:${p.verse}</div>` +
                        (nEst > 1 ? `<div class="ppartes">✂️ ${nEst} partes</div>` : "") +
+                       `<div class="predtext">${escapeHtml(texto)}</div>` +
                        (meta ? `<div class="predmeta">· ${escapeHtml(meta)}</div>` : "");
       const up = document.createElement("button");
       up.className = "mvbtn";
@@ -721,7 +751,7 @@
       if (curIdx === i) {
         curIdx = -1; curPart = 0; partesInfo = null;
         salirModoResaltar();
-        preview.style.display = "none";
+        actualizarVisibilidadPreview();  // v27: la pantalla sigue mostrando el versiculo; el recuadro queda
         editVerseButton.disabled = true; predicaAddButton.disabled = true;
       } else if (curIdx > i) {
         curIdx--;
@@ -747,24 +777,44 @@
   }
   function proyectarPredica(i) {
     if (i < 0 || i >= predicaItems.length) return;
+    const yaProyectado = enPredica && i === curIdx;  // v27
     enPredica = true;
     playlist = clonarPredica();
     partesInfo = null;
     activarTab("predica");
-    proyectar(i, 0);
+    // v27: tocar de nuevo el que ya esta proyectado -> parte siguiente (si esta dividido)
+    if (yaProyectado) {
+      const nP = partesInfo ? partesInfo.count : rangesDe(playlist[i]).length;
+      proyectar(i, nP > 1 ? (curPart + 1) % nP : 0);
+    } else {
+      proyectar(i, 0);
+    }
   }
   async function restaurarCapitulo() {
     if (!enPredica) return;
     enPredica = false;
     if (capActual != null && currentBookNumber != null) {
-      await cargarVersiculosCapitulo(capActual, false);
+      await cargarVersiculosCapitulo(capActual, false);  // v27: dentro se reubica el proyectado
     }
+    if (curIdx >= 0) actualizarPreview();
+    else { actualizarVisibilidadPreview(); editVerseButton.disabled = true; predicaAddButton.disabled = true; }
     marcarSeleccion();
   }
   function restaurarBusqueda() {
     enPredica = false;
-    if (playlistBusqueda.length) { playlist = playlistBusqueda; partesInfo = null; }
+    if (playlistBusqueda.length) {
+      // v27: reubicar el proyectado dentro de los resultados (el indice viejo era de la predicacion)
+      const proy = (curIdx >= 0 && playlist[curIdx]) ? playlist[curIdx] : null;
+      playlist = playlistBusqueda; partesInfo = null;
+      if (proy) {
+        curIdx = playlist.findIndex(it => mismoVersiculo(it, proy));
+        if (curIdx < 0) curPart = 0;
+      }
+    }
     refrescarAddBtns();
+    if (curIdx >= 0) actualizarPreview();
+    else { actualizarVisibilidadPreview(); editVerseButton.disabled = true; predicaAddButton.disabled = true; }
+    marcarSeleccion();
   }
   vaciarPredicaBtn.addEventListener("click", () => {
     if (!predicaItems.length) return;
@@ -941,6 +991,9 @@
     const r = await fetch(`./api/verses?version=${encodeURIComponent(versionSelect.value)}&book=${currentBookNumber}&chapter=${c}`);
     const verses = await r.json();
 
+    // v27: reubicar el versiculo PROYECTADO en el capitulo recien cargado (si esta);
+    // si no esta, curIdx queda en -1 y la lista no marca un versiculo equivocado.
+    const proy = (curIdx >= 0 && playlist[curIdx]) ? playlist[curIdx] : null;
     playlist = verses.map(v => ({
       referencia: `${selectedBookName} ${c}:${v.verse}`,
       version: versionSelect.value,
@@ -951,6 +1004,10 @@
     partesInfo = null;
     enPredica = false;
     capActual = c;
+    if (proy) {
+      curIdx = playlist.findIndex(it => mismoVersiculo(it, proy));
+      if (curIdx < 0) curPart = 0;
+    }
     if (forzarVista) verGrilla();
 
     const maxV = Math.max(...verses.map(v => v.verse));
@@ -984,6 +1041,7 @@
         const i2 = playlist.findIndex(it => it.verse === n);
         if (i2 < 0) return;
         proyectar(i2, 0);
+        verLista();  // v27: al elegir en la cuadricula se despliega la lista (esa es la vista)
       });
       verseGrid.appendChild(cellv);
     }
@@ -1025,7 +1083,14 @@
       div.appendChild(ab);
       div.addEventListener("click", async () => {
         if (enPredica) await (fuente === "busq" ? restaurarBusqueda() : restaurarCapitulo());
-        proyectar(i, 0);
+        // v27: tocar de nuevo el versiculo ya proyectado -> parte siguiente (si esta
+        // dividido); otro versiculo -> se proyecta desde la parte 1.
+        if (i === curIdx) {
+          const nP = partesInfo ? partesInfo.count : rangesDe(playlist[i]).length;
+          proyectar(i, nP > 1 ? (curPart + 1) % nP : 0);
+        } else {
+          proyectar(i, 0);
+        }
         if (conReferencia) window.scrollTo(0, 0);
       });
       container.appendChild(div);
@@ -1060,12 +1125,14 @@
     verseList.style.display = "block";
     verseGrid.style.display = "none";
     dotsButton.textContent = "🔲 Cuadrícula";
+    actualizarVisibilidadPreview();  // v27
     marcarSeleccion();
   }
   function verGrilla() {
     verseList.style.display = "none";
     verseGrid.style.display = "grid";
     dotsButton.textContent = "⋮ Lista";
+    actualizarVisibilidadPreview();  // v27
   }
   dotsButton.addEventListener("click", () => {
     (verseList.style.display === "none") ? verLista() : verGrilla();
@@ -1077,6 +1144,7 @@
     document.querySelectorAll(".tabpage").forEach(p => p.classList.toggle("active", p.id === "page-" + name));
     if (name !== "busqueda") ultimoTab = name;
     tabActiva = name;
+    actualizarVisibilidadPreview();  // v27: las vistas de lista no repiten el recuadro verde
     if (!yaActiva) marcarSeleccion();  // al ENTRAR a una pestana la lista sigue al versiculo en curso
   }
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => activarTab(t.dataset.tab)));
@@ -1103,6 +1171,7 @@
     const r = await fetch(`./api/search?q=${encodeURIComponent(q)}&version=${encodeURIComponent(versionSelect.value)}`);
     const res = await r.json();
 
+    const proy = (curIdx >= 0 && playlist[curIdx]) ? playlist[curIdx] : null;  // v27
     playlist = res.map(item => ({
       referencia: `${item.book_name} ${item.chapter}:${item.verse}`,
       version: versionSelect.value,
@@ -1112,6 +1181,11 @@
     }));
     partesInfo = null; qBusqueda = q;
     playlistBusqueda = playlist; enPredica = false;
+    // v27: reubicar el versiculo proyectado dentro de los resultados
+    if (proy) {
+      curIdx = playlist.findIndex(it => mismoVersiculo(it, proy));
+      if (curIdx < 0) curPart = 0;
+    }
 
     searchInfoTexto.textContent = `“${q}”: ${res.length} versículo(s)`;
     pintarLista(resultList, q, true, "busq");
@@ -1129,6 +1203,7 @@
 
   clearButton.addEventListener("click", () => {
     playlist = []; curIdx = -1; curPart = 0; partesInfo = null;
+    hayProyeccion = false;  // v27: Limpiar apaga todo
     selectedBookName = ""; currentBookNumber = null;
     salirModoResaltar();
     preview.style.display = "none";
