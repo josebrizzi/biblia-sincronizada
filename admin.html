@@ -190,7 +190,6 @@
   @media (max-width: 420px) {
     .actions button { padding:12px 8px; font-size:14px; }
   }
-  #clearButton { background:#E9EDF2; color:#1D3557; }
 
   .status { padding:6px 12px 4px; font-size:13px; color:#778397; font-family:'Roboto Mono', monospace; display:flex; gap:12px; align-items:center; }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }</style>
@@ -198,7 +197,7 @@
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v29 · <span id="connectedCount">0</span> conect.</span>
+  <span>v30 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -261,7 +260,6 @@
   <div class="actions">
     <button id="predicaAddButton" disabled title="Agregar el versículo proyectado a la lista de predicación">➕ Predicación</button>
     <button id="editVerseButton" disabled>🖍️ Resaltar</button>
-    <button id="clearButton">Limpiar</button>
   </div>
 </div>
 
@@ -293,7 +291,6 @@
   const searchInfoTexto = document.getElementById("searchInfoTexto");
   const clearSearchButton = document.getElementById("clearSearchButton");
   const editVerseButton = document.getElementById("editVerseButton");
-  const clearButton = document.getElementById("clearButton");
   const wsStatus = document.getElementById("wsStatus");
   const connectedCount = document.getElementById("connectedCount");  const predicaAddButton = document.getElementById("predicaAddButton");
   const vaciarPredicaBtn = document.getElementById("vaciarPredicaBtn");
@@ -664,7 +661,7 @@
     if (curIdx < 0) return;
     modoResaltar = !modoResaltar;
     editVerseButton.classList.toggle("resaltando", modoResaltar);
-    editVerseButton.textContent = modoResaltar ? "✕ Terminar resaltado" : "🖍️ Resaltar";
+    editVerseButton.textContent = modoResaltar ? "✕ Quitar resaltado" : "🖍️ Resaltar";
     const it = playlist[curIdx];
     if (modoResaltar) {
       // v28: el resaltado se hace DENTRO de la lista -> llevar la vista al item
@@ -687,6 +684,25 @@
         }));
       }
     } else {
+      // v30: "Quitar resaltado" = al salir se QUITAN los colores del versiculo
+      // proyectado (en la lista y en la pantalla; el versiculo sigue proyectado).
+      // Antes el boton solo cerraba el modo y los colores habia que sacarlos uno
+      // por uno (o con Limpiar, que borraba TODO y ya no existe).
+      if (it.words.some(w => w.h)) {
+        it.words = it.words.map(w => ({ t: w.t, h: "" }));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          const pid = ++pidEnvio;
+          pidUltimo = pid;
+          ws.send(JSON.stringify({
+            type: "project",
+            reference: it.referencia,
+            data: { type: "verse", words: it.words, part: curPart,
+                    version: it.version, bookName: it.bookName,
+                    bookNumber: it.bookNumber, pid: pid,
+                    chapter: it.chapter, verse: it.verse }
+          }));
+        }
+      }
       document.body.classList.remove("resaltando");  // v28: al salir se apaga la paleta
     }
     actualizarPreview();
@@ -870,7 +886,13 @@
     const yaProyectado = enPredica && i === curIdx;  // v27
     enPredica = true;
     playlist = clonarPredica();
-    partesInfo = null;
+    // v30: BUG "no se puede ir a la parte B" (diag_parte_b_predica.py 2/2): antes se
+    // descartaba partesInfo SIEMPRE y el toque de nuevo decidia la parte siguiente
+    // con el ESTIMADO por caracteres. Si la pantalla dividio en 2 (cartel
+    // "Parte 1 de 2") pero el estimado decia 1, NUNCA se llegaba a la parte B; y al
+    // reves, se inventaba una parte 2 que la pantalla no tenia. La division REAL
+    // vale para el MISMO versiculo; si se proyecta otro, se descarta.
+    if (!yaProyectado) partesInfo = null;
     activarTab("predica");
     // v27: tocar de nuevo el que ya esta proyectado -> parte siguiente (si esta dividido)
     if (yaProyectado) {
@@ -1291,9 +1313,11 @@
   searchInput.addEventListener("keydown", e => { if (e.key === "Enter") hacerBusqueda(); });
   clearSearchButton.addEventListener("click", salirBusqueda);
 
-  clearButton.addEventListener("click", () => {
+  // v30: el boton "Limpiar" se retira de la barra de abajo (lo pide el operador).
+  // La funcion queda SOLO para reiniciar el estado al cambiar la version de la Biblia.
+  function limpiarTodo() {
     playlist = []; curIdx = -1; curPart = 0; partesInfo = null;
-    hayProyeccion = false;  // v27: Limpiar apaga todo
+    hayProyeccion = false;
     selectedBookName = ""; currentBookNumber = null;
     salirModoResaltar();
     preview.style.display = "none";
@@ -1306,10 +1330,10 @@
     searchInput.value = ""; searchInfo.style.display = "none";
     tabEstado("capitulo", false); tabEstado("versiculo", false); tabEstado("busqueda", false);
     activarTab("libro");
-  });
+  }
 
   versionSelect.addEventListener("change", () => {
-    clearButton.click();
+    limpiarTodo();
     if (versionSelect.value) cargarLibros();
   });
 
