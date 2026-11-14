@@ -6,50 +6,51 @@
 <title>Biblia Sincronizada — Predicador</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icono.svg">
-<meta name="theme-color" content="#173f35">
+<meta name="theme-color" content="#101F38">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@400;700;900&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin:0; font-family: Arial, sans-serif; background:#f4f1ea; color:#222; }
-  header { background:#173f35; color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
-  header h1 { margin:0; font-size:20px; }
-  header span { font-size:13px; opacity:.85; }
-  .topbar { background:#fff; padding:10px 12px; display:flex; gap:10px; border-bottom:1px solid #e0ddd5; }
-  .topbar select { flex:1; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:16px; }
-  .search-row { display:flex; gap:8px; padding:10px 12px; background:#fff; border-bottom:1px solid #e0ddd5; }
-  #searchInput { flex:1; padding:11px 12px; border:2px solid #ccc; border-radius:10px; font-size:17px; }
-  #searchInput:focus { border-color:#173f35; outline:none; }
-  #searchButton { border:none; border-radius:10px; width:52px; background:#173f35; color:#fff; font-size:20px; cursor:pointer; }
-  .search-info { display:none; padding:8px 12px; background:#eef4f1; color:#173f35; font-weight:bold; font-size:14px; justify-content:space-between; align-items:center; }
-  .search-info button { background:none; border:none; color:#173f35; text-decoration:underline; font-weight:bold; cursor:pointer; }
+  body { margin:0; font-family:'Lato', Arial, sans-serif; background:#F3F2EE; color:#253247; }
+  header { background:#101F38; color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #C6A45B; }
+  header h1 { margin:0; font-size:20px; font-family:'Playfair Display', Georgia, serif; letter-spacing:.3px; }
+  header span { font-size:13px; opacity:.9; color:#E6D5A8; font-family:'Roboto Mono', monospace; }
+  .topbar { background:#FFFFFF; padding:10px 12px; display:flex; gap:10px; border-bottom:1px solid #DCE2EA; }
+  .topbar select { flex:1; padding:10px; border:1px solid #C9D2DE; border-radius:10px; font-size:16px; background:#fff; color:#253247; }
+  .search-row { display:flex; gap:8px; padding:10px 12px; background:#FFFFFF; border-bottom:1px solid #DCE2EA; }
+  #searchInput { flex:1; padding:11px 12px; border:2px solid #C9D2DE; border-radius:10px; font-size:17px; background:#fff; color:#253247; }
+  #searchInput:focus { border-color:#C6A45B; outline:none; }
+  #searchButton { border:none; border-radius:10px; width:52px; background:#101F38; color:#fff; font-size:20px; cursor:pointer; }
+  .search-info { display:none; padding:8px 12px; background:#E9EDF2; color:#1D3557; font-weight:bold; font-size:14px; justify-content:space-between; align-items:center; }
+  .search-info button { background:none; border:none; color:#1D3557; text-decoration:underline; font-weight:bold; cursor:pointer; }
 
-  body.resaltando .tabs, body.resaltando main { display:none; }
+  /* v28: el resaltado ya NO esconde las pestanas ni la lista: se hace sobre
+     las palabras del versiculo proyectado DENTRO de la lista */
 
   .preview { padding:10px 12px; display:none; flex-direction:column; gap:8px; }
-  .pbox { border-radius:10px; padding:10px 12px; cursor:pointer; }
+  .pbox { border-radius:14px; padding:10px 12px; cursor:pointer; }
   .pbox .pref { font-weight:bold; font-size:14px; }
   .pbox .ptext { font-size:16px; line-height:1.4; margin-top:2px; }
   /* Recuadro VERDE: lo que SE ESTÁ PROYECTANDO en este momento */
   .pbox.cur {
-    background:#15803d; color:#fff; text-align:center;
-    padding:14px 12px; border-radius:12px; cursor:default;
-    box-shadow:0 2px 10px rgba(21,128,61,.35);
+    background:#347653; color:#fff; text-align:center;
+    padding:14px 12px; border-radius:14px; cursor:default;
+    box-shadow:0 2px 10px rgba(52,118,83,.35);
     transition: background 0.3s, color 0.3s;
   }
-  .pbox.cur .pref { color:#cdebd8; font-size:13.5px; font-family:'Montserrat', Arial, sans-serif; }
+  .pbox.cur .pref { color:#d7e8de; font-size:13.5px; font-family:'Lato', Arial, sans-serif; }
   .pbox.cur .ptext { color:#fff; font-size:19px; font-weight:bold; line-height:1.5; max-height:36vh; overflow-y:auto;
-                     font-family:'Inter', Arial, sans-serif; }
-  .pbox.cur.resaltando { border:3px solid #f59e0b; cursor:pointer; }
-  .pbox.cur.resaltando::before { content:"🖍️ Elegí un color y tocá las palabras"; display:block; font-size:11px; color:#fef3c7; letter-spacing:.4px; margin-bottom:6px; font-weight:bold; }
+                     font-family:'Lato', Arial, sans-serif; }
+  .pbox.cur.resaltando { border:3px solid #C6A45B; cursor:pointer; }
+  .pbox.cur.resaltando::before { content:"🖍️ Elegí un color y tocá las palabras"; display:block; font-size:11px; color:#E6D5A8; letter-spacing:.4px; margin-bottom:6px; font-weight:bold; }
   .pbox.cur.resaltando .ptext { cursor:pointer; user-select:none; }
 
   /* Recuadros GRISES: lo que viene (partes 2 y 3 del versículo, o el
      versículo siguiente). El gris indica que AÚN no está proyectado. */
   .pbox.q {
-    background:#6b7280; color:#fff; text-align:center;
-    padding:12px; border-radius:12px; min-height:64px;
+    background:#778397; color:#fff; text-align:center;
+    padding:12px; border-radius:14px; min-height:64px;
     box-shadow:0 2px 6px rgba(0,0,0,.15);
   }
   .pbox.q:active { filter:brightness(1.12); }
@@ -57,128 +58,147 @@
   .pbox.q .ptext { color:#fff; font-size:14px; line-height:1.45; }
   .pbox.hidden { display:none; }
   .ptext .palabra { border-radius:3px; }
+  /* v28: palabras tocables del resaltado DENTRO de la lista */
+  .palabra { border-radius:4px; padding:0 2px; margin:0 1px; }
+  body.resaltando .palabra { cursor:pointer; user-select:none; }
+  body.resaltando .verse.selected .vtext::before,
+  body.resaltando .predica-item.selected .predtext::before {
+    content:"🖍️ Elegí un color y tocá las palabras"; display:block; font-size:12px;
+    color:#101F38; background:#E6D5A8; border-radius:8px; padding:4px 8px;
+    margin-bottom:6px; font-weight:bold; }
 
-  .colores { display:none; gap:10px; align-items:center; padding:2px 4px; }
-  .preview.resaltando .colores { display:flex; }
+  /* v28: paleta de colores del resaltado, ahora DENTRO de la barra de abajo */
+  .colores { display:none; gap:10px; align-items:center; justify-content:center; padding:2px 4px 10px; }
+  body.resaltando .colores { display:flex; }
   .cbtn { width:36px; height:36px; border-radius:50%; border:3px solid #ccc; cursor:pointer; }
-  .cbtn.sel { border-color:#173f35; box-shadow:0 0 0 2px #fff inset; }
+  .cbtn.sel { border-color:#101F38; box-shadow:0 0 0 2px #fff inset; }
 
-  .tabs { display:flex; background:#fff; border-bottom:2px solid #e0ddd5; position:sticky; top:0; z-index:5; }
-  .tab { flex:1; text-align:center; padding:12px 2px; font-weight:bold; font-size:clamp(10px, 2.9vw, 13px); color:#888; cursor:pointer; border-bottom:3px solid transparent; position:relative; }
-  .tab.active { color:#173f35; border-bottom-color:#173f35; }
+  .tabs { display:flex; background:#FFFFFF; border-bottom:2px solid #DCE2EA; position:sticky; top:0; z-index:5; }
+  .tab { flex:1; text-align:center; padding:12px 2px; font-weight:bold; font-size:clamp(10px, 2.9vw, 13px); color:#778397; cursor:pointer; border-bottom:3px solid transparent; position:relative; transition:color .2s, border-color .2s; }
+  .tab.active { color:#101F38; border-bottom-color:#C6A45B; }
   .tab.disabled { color:#ccc; pointer-events:none; }
 
-  .tbadge { position:absolute; top:4px; right:4px; background:#dc2626; color:#fff; border-radius:9px; min-width:15px; height:15px; font-size:9.5px; line-height:15px; text-align:center; padding:0 4px; display:none; font-family:Arial; font-weight:normal; }
+  .tbadge { position:absolute; top:4px; right:4px; background:#B84236; color:#fff; border-radius:9px; min-width:15px; height:15px; font-size:9.5px; line-height:15px; text-align:center; padding:0 4px; display:none; font-family:Arial; font-weight:normal; }
   .tbadge.has { display:block; }
 
   /* ===== PREDICACIÓN ===== */
   .ptoolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
-  .ptitle { font-weight:bold; color:#173f35; font-size:15px; letter-spacing:1px; font-family:'Montserrat', Arial, sans-serif; }
-  .mini-btn.rojo { background:#b91c1c; }
-  #predList { border:1px solid #ddd; border-radius:10px; overflow:hidden; background:#fff; }
-  .predica-item { display:flex; gap:10px; align-items:center; padding:13px 12px; border-bottom:1px solid #e8e8e8; cursor:pointer; background:#fff; }
+  .ptitle { font-weight:bold; color:#101F38; font-size:15px; letter-spacing:1px; font-family:'Playfair Display', Georgia, serif; }
+  .mini-btn.rojo { background:#B84236; }
+  #predList { border:1px solid #DCE2EA; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 1px 4px rgba(16,31,56,.06); }
+  .predica-item { display:flex; gap:10px; align-items:center; padding:13px 12px; border-bottom:1px solid #E9EDF2; cursor:pointer; background:#fff; transition:background .2s ease; }
   .predica-item:last-child { border-bottom:none; }
-  .predica-item:hover { background:#f4f7f5; }
+  .predica-item:hover { background:#F3F2EE; }
   /* v27: en predicacion el proyectado se distingue con OTRO color (azul) */
-  .predica-item.selected { background:#1d4ed8; }
+  .predica-item.selected { background:#1D3557; }
   .predica-item.selected .predref { color:#fff; }
-  .predica-item.selected .porder { background:#fff; color:#1d4ed8; }
-  .predica-item.selected .ppartes { color:#fde68a; }
-  .predica-item.selected .predmeta { color:#dbeafe; }
+  .predica-item.selected .porder { background:#fff; color:#1D3557; }
+  .predica-item.selected .ppartes { color:#E6D5A8; }
+  .predica-item.selected .predmeta { color:#c9d7ea; }
   .predica-item.selected .predtext { color:#fff; }
   /* v27: texto completo del versiculo en cada item de la lista de predicacion */
-  .predtext { font-size:16px; line-height:1.5; margin-top:3px; color:#333; font-family:Arial; overflow-wrap:break-word; }
-  .ppartes { font-size:11px; color:#b45309; font-weight:bold; margin-top:2px; }
-  .porder { min-width:30px; height:30px; border-radius:50%; background:#173f35; color:#fff; font-weight:bold; font-size:15px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; font-family:Arial; }
+  .predtext { font-size:16px; line-height:1.5; margin-top:3px; color:#253247; font-family:'Lato', Arial, sans-serif; overflow-wrap:break-word; }
+  .ppartes { font-size:11px; color:#8a6d2f; font-weight:bold; margin-top:2px; }
+  .porder { min-width:30px; height:30px; border-radius:50%; background:#101F38; color:#fff; font-weight:bold; font-size:15px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; font-family:Arial; }
   .pmain { flex:1; min-width:0; }
-  .predref { font-weight:bold; font-size:18px; color:#173f35; display:flex; align-items:center; gap:8px; font-family:'Montserrat', Arial, sans-serif; }
-  .predmeta { font-size:12px; color:#888; margin-top:2px; font-family:Arial; }
-  .delbtn { border:none; background:#fde8e8; color:#b91c1c; width:34px; height:34px; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; flex:0 0 auto; }
-  .delbtn:active { background:#f8c9c9; }
-  .mvbtn { border:none; background:#eef4f1; color:#173f35; width:30px; height:34px; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; flex:0 0 auto; font-family:Arial; }
-  .mvbtn:active { background:#dcebe3; }
+  .predref { font-weight:bold; font-size:18px; color:#101F38; display:flex; align-items:center; gap:8px; font-family:'Playfair Display', Georgia, serif; }
+  .predmeta { font-size:12px; color:#778397; margin-top:2px; font-family:'Lato', Arial, sans-serif; }
+  .delbtn { border:none; background:#f6e4e2; color:#B84236; width:34px; height:34px; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; flex:0 0 auto; }
+  .delbtn:active { background:#eecfc9; }
+  .mvbtn { border:none; background:#E9EDF2; color:#1D3557; width:30px; height:34px; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; flex:0 0 auto; font-family:Arial; }
+  .mvbtn:active { background:#d5dde8; }
   .mvbtn:disabled { opacity:.35; cursor:default; }
-  .pred-vacio { color:#999; font-size:14px; text-align:center; padding:26px 16px; line-height:1.7; background:#fff; border:1px dashed #ccc; border-radius:10px; }
-  .addbtn { border:none; background:#eef4f1; color:#173f35; border-radius:8px; padding:9px 11px; font-size:16px; cursor:pointer; flex:0 0 auto; align-self:center; font-weight:bold; }
-  .addbtn.en-lista { background:#c8e6c9; color:#1b5e20; }
+  .pred-vacio { color:#778397; font-size:14px; text-align:center; padding:26px 16px; line-height:1.7; background:#fff; border:1px dashed #C9D2DE; border-radius:14px; }
+  .addbtn { border:none; background:#E9EDF2; color:#1D3557; border-radius:8px; padding:9px 11px; font-size:16px; cursor:pointer; flex:0 0 auto; align-self:center; font-weight:bold; }
+  .addbtn.en-lista { background:#d8e7dd; color:#2c5e43; }
   .vcontenido { flex:1; min-width:0; }
-  #toast { position:fixed; bottom:180px; left:50%; transform:translateX(-50%) translateY(12px); background:#173f35; color:#fff; padding:10px 18px; border-radius:22px; font-size:14px; font-weight:bold; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:60; max-width:86vw; text-align:center; box-shadow:0 3px 12px rgba(0,0,0,.3); }
+  #toast { position:fixed; bottom:180px; left:50%; transform:translateX(-50%) translateY(12px); background:#101F38; color:#fff; padding:10px 18px; border-radius:22px; font-size:14px; font-weight:bold; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:60; max-width:86vw; text-align:center; box-shadow:0 3px 12px rgba(0,0,0,.3); }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
   main { max-width:1000px; margin:0 auto; }
   .tabpage { display:none; padding:10px 12px 150px; }
   .tabpage.active { display:block; }
 
-  .mini-btn { border:none; border-radius:9px; background:#173f35; color:#fff; font-size:14px; font-weight:bold; padding:8px 14px; cursor:pointer; }
+  .mini-btn { border:none; border-radius:10px; background:#101F38; color:#fff; font-size:14px; font-weight:bold; padding:8px 14px; cursor:pointer; }
   .chipstrip { display:none; gap:6px; overflow-x:auto; padding:4px 2px 8px; }
   .chipstrip.has { display:flex; }
-  .chiplabel { flex:0 0 auto; font-size:11px; color:#777; align-self:center; padding-right:2px; font-weight:bold; }
-  .chip { flex:0 0 auto; border-radius:8px; padding:8px 11px; background:#e6e6e6; color:#173f35; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15); }
+  .chiplabel { flex:0 0 auto; font-size:11px; color:#778397; align-self:center; padding-right:2px; font-weight:bold; }
+  .chip { flex:0 0 auto; border-radius:10px; padding:8px 11px; background:#E9EDF2; color:#1D3557; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15); }
 
-  .gr-title { grid-column: 1 / -1; font-weight:bold; color:#173f35; font-size:15px;
-              letter-spacing:1.5px; padding:10px 2px 6px; border-bottom:3px solid #d8d3c8; margin-top:6px;
-              font-family:'Montserrat', Arial, sans-serif; }
+  .gr-title { grid-column: 1 / -1; font-weight:bold; color:#101F38; font-size:15px;
+              letter-spacing:1.5px; padding:10px 2px 6px; border-bottom:3px solid #DCE2EA; margin-top:6px;
+              font-family:'Playfair Display', Georgia, serif; }
   .gr-title.nt { color:#7b4bab; border-bottom-color:#d9c8ef; }
 
   .bgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:6px; }
   .bcell { position:relative; border-radius:10px; padding:12px 6px; text-align:center; background:#8b8f8d; color:#fff;
            font-weight:bold; font-size:18px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.25);
-           font-family:'Montserrat', Arial, sans-serif; user-select:none; line-height:1.3; word-wrap:break-word; }
+           font-family:'Lato', Arial, sans-serif; user-select:none; line-height:1.3; word-wrap:break-word; }
   .bcell:hover { filter:brightness(1.12); }
-  .bcell .star { position:absolute; top:2px; right:5px; font-size:12px; color:#ffe27a; text-shadow:0 1px 2px rgba(0,0,0,.5); display:none; }
+  .bcell .star { position:absolute; top:2px; right:5px; font-size:12px; color:#E6D5A8; text-shadow:0 1px 2px rgba(0,0,0,.5); display:none; }
   .bcell.fav .star { display:block; }
-  .bcell.selected { outline:3px solid #173f35; outline-offset:2px; }
-  .hint { font-size:11px; color:#888; padding:8px 2px; }
+  .bcell.selected { outline:3px solid #101F38; outline-offset:2px; }
+  .hint { font-size:11px; color:#778397; padding:8px 2px; }
 
 
-  .vtoolbar { display:flex; justify-content:flex-end; margin-bottom:8px; }
   .grid-num { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
-  .numcell { background:#e3ece7; color:#173f35; font-weight:bold; font-size:20px; text-align:center; padding:16px 0; border-radius:6px; cursor:pointer; }
-  .numcell:hover { background:#d3e2db; }
-  .numcell.selected { background:#173f35; color:#fff; }
+  .numcell { background:#E9EDF2; color:#1D3557; font-weight:bold; font-size:20px; text-align:center; padding:16px 0; border-radius:10px; cursor:pointer; transition:background .2s ease; }
+  .numcell:hover { background:#d5dde8; }
+  .numcell.selected { background:#101F38; color:#fff; }
 
-  .vlist { margin-top:12px; border:1px solid #ddd; border-radius:10px; overflow:hidden; }
-  .verse { display:flex; gap:10px; padding:12px; border-bottom:1px solid #e8e8e8; cursor:pointer; background:#fff; }
+  .vlist { margin-top:12px; border:1px solid #DCE2EA; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 1px 4px rgba(16,31,56,.06); }
+  .verse { display:flex; gap:10px; padding:12px; border-bottom:1px solid #E9EDF2; cursor:pointer; background:#fff; transition:background .2s ease; }
   .verse:last-child { border-bottom:none; }
-  .verse:hover { background:#f4f7f5; }
+  .verse:hover { background:#F3F2EE; }
   /* v27: el versiculo proyectado, resaltado EN LA LISTA (verde, blanco, negrita) */
-  .verse.selected { background:#15803d; }
+  .verse.selected { background:#347653; }
   .verse.selected .vnum { color:#fff; }
   .verse.selected .vtext { color:#fff; font-weight:bold; }
   .verse.selected .search-ref { color:#fff; }
-  .verse.selected .vtext mark { color:#173f35; }
+  .verse.selected .vtext mark { color:#101F38; }
+  /* v28: la division se ve EN LA LISTA: cartel "Parte X de Y" y la parte que
+     esta en pantalla resaltada dentro del texto (el que predica mira el telefono) */
+  .pbadge { font-size:12px; font-weight:bold; color:#8a6d2f; background:#F5EDD8; border:1px solid #D5A13A;
+            border-radius:10px; padding:2px 9px; display:inline-block; margin-top:5px; width:fit-content; max-width:100%; }
+  .pbadge:empty { display:none; }
+  .verse.selected .pbadge { background:#D5A13A; border-color:#D5A13A; color:#101F38; }
+  .pa { background:#fde047; color:#101F38; border-radius:4px; padding:0 3px;
+        box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+  .ppartes:empty { display:none; }
   /* .verse.ref ahora es flex para alojar el botón ➕ */
-  .vnum { min-width:30px; font-weight:bold; color:#173f35; font-size:18px; }
+  .vnum { min-width:30px; font-weight:bold; color:#1D3557; font-size:18px; }
   /* v27: letra un poco mas grande en la lista del capitulo */
   .vtext { font-size:21px; line-height:1.5; overflow-wrap:break-word; }
-  .vtext mark { background:#ffe27a; padding:0 2px; border-radius:3px; }
-  .search-ref { font-size:15px; font-weight:bold; color:#173f35; margin-bottom:4px; display:flex; align-items:center; gap:7px;
-                font-family:'Montserrat', Arial, sans-serif; }
+  .vtext mark { background:#E6D5A8; padding:0 2px; border-radius:3px; }
+  .search-ref { font-size:15px; font-weight:bold; color:#101F38; margin-bottom:4px; display:flex; align-items:center; gap:7px;
+                font-family:'Playfair Display', Georgia, serif; }
 
   .bottombar { position:fixed; bottom:0; left:0; right:0; max-width:1000px; margin:0 auto;
-               background:rgba(244,241,234,0.97); border-top:1px solid #ddd; z-index:6; }
+               background:rgba(243,242,238,0.97); border-top:1px solid #DCE2EA; z-index:6;
+               box-shadow:0 -2px 12px rgba(16,31,56,.08); }
   .fondos-row { display:flex; gap:10px; justify-content:center; padding:8px 10px 2px; }
-  .fbtn { width:42px; height:42px; border-radius:50%; border:3px solid #ccc; cursor:pointer;
+  .fbtn { width:42px; height:42px; border-radius:50%; border:3px solid #C9D2DE; cursor:pointer;
           font-size:19px; display:flex; align-items:center; justify-content:center; background:#fff; }
-  .fbtn.sel { border-color:#173f35; }
+  .fbtn.sel { border-color:#C6A45B; }
   .actions { display:flex; gap:10px; padding:8px 12px 10px; }
   .actions button { border:none; border-radius:9px; padding:12px 18px; font-size:16px; font-weight:bold; cursor:pointer; }
-  #editVerseButton { background:#b45309; color:#fff; flex:1; }
-  #editVerseButton.resaltando { background:#7a5c00; }
+  #editVerseButton { background:#C6A45B; color:#101F38; flex:1; }
+  #editVerseButton.resaltando { background:#A8823C; }
   #editVerseButton:disabled { background:#ccc; cursor:not-allowed; }
-  #predicaAddButton { background:#173f35; color:#fff; flex:1; }
+  #predicaAddButton { background:#101F38; color:#fff; flex:1; }
   #predicaAddButton:disabled { background:#ccc; cursor:not-allowed; }
   @media (max-width: 420px) {
     .actions button { padding:12px 8px; font-size:14px; }
   }
-  #clearButton { background:#ddd; color:#222; }
+  #clearButton { background:#E9EDF2; color:#1D3557; }
 
-  .status { padding:6px 12px 4px; font-size:13px; color:#666; display:flex; gap:12px; align-items:center; }</style>
+  .status { padding:6px 12px 4px; font-size:13px; color:#778397; font-family:'Roboto Mono', monospace; display:flex; gap:12px; align-items:center; }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }</style>
 </head>
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <span>v27 · <span id="connectedCount">0</span> conect.</span>
+  <span>v29 · <span id="connectedCount">0</span> conect.</span>
 </header>
 
 <div class="topbar">
@@ -196,7 +216,6 @@
 
 <div class="preview" id="preview">
   <div class="pbox cur" id="curBox"><div class="pref" id="curRef"></div><div class="ptext" id="curText"></div></div>
-  <div class="colores" id="coloresRow"></div>
   <div class="pbox q hidden" id="qBox2"></div>
   <div class="pbox q hidden" id="qBox3"></div>
 </div>
@@ -219,10 +238,6 @@
     <div class="grid-num" id="chapterGrid"></div>
   </section>
   <section class="tabpage" id="page-versiculo">
-    <div class="vtoolbar">
-      <button id="dotsButton" class="mini-btn">⋮ Lista</button>
-    </div>
-    <div class="hint">Mantené presionado (o clic derecho) un número para ➕ agregarlo a la predicación · Tocá de nuevo el versículo proyectado (verde) para pasar a su parte siguiente ✂️</div>
     <div class="grid-num" id="verseGrid"></div>
     <div class="vlist" id="verseList" style="display:none;"></div>
   </section>
@@ -242,6 +257,7 @@
 
 <div class="bottombar">
   <div class="fondos-row" id="fondosRow"></div>
+  <div class="colores" id="coloresRow"></div>
   <div class="actions">
     <button id="predicaAddButton" disabled title="Agregar el versículo proyectado a la lista de predicación">➕ Predicación</button>
     <button id="editVerseButton" disabled>🖍️ Resaltar</button>
@@ -262,7 +278,6 @@
   const chapterGrid = document.getElementById("chapterGrid");
   const verseGrid = document.getElementById("verseGrid");
   const verseList = document.getElementById("verseList");
-  const dotsButton = document.getElementById("dotsButton");
   const resultList = document.getElementById("resultList");
   const preview = document.getElementById("preview");
   const qBox2 = document.getElementById("qBox2");
@@ -286,7 +301,7 @@
   const predVacio = document.getElementById("predVacio");
   const predicaBadge = document.getElementById("predicaBadge");
 
-  const UMBRAL_EST = 240;
+  const UMBRAL_EST = 180;  // v28: mas cerca de la regla real de la pantalla (divide con mas de 2 lineas de TV)
   const COLORES = ["#ffff00", "#8aff8a", "#7cdcff", "#ff9ee8", "#ffc966"];
   const NOMBRES = ["Amarillo", "Verde", "Celeste", "Rosa", "Naranja"];
   let colorActual = COLORES[0];
@@ -448,6 +463,70 @@
     return s;
   }
 
+  // v28: HTML del texto con la parte activa resaltada (conserva las marcas de
+  // busqueda y muestra los colores del resaltado ya aplicados)
+  function htmlPartes(it, r, q) {
+    return it.words.map((w, i) => {
+      let cuerpo = resaltarQ(w.t, q || "");
+      if (w.h) cuerpo = `<span style="background-color:${w.h}">${cuerpo}</span>`;
+      return (i >= r[0] && i < r[1]) ? `<span class="pa">${cuerpo}</span>` : cuerpo;
+    }).join(" ");
+  }
+
+  // v28: la division del versiculo proyectado se ve EN LA LISTA: cartel
+  // "✂️ Parte X de Y" y la parte que esta en pantalla resaltada dentro del
+  // texto. El que predica mira el telefono (no la pantalla) y asi sabe si el
+  // versiculo va dividido y por donde va: sale del estimado al proyectar y se
+  // corrige con la medicion real (parts-info) apenas la pantalla responde.
+  // En modo Resaltar, el texto del item son las palabras tocables.
+  let elDivPrevio = null;
+  function pintarDivisionLista() {
+    if (elDivPrevio) {
+      elDivPrevio.textoEl.innerHTML = elDivPrevio.orig;
+      if (elDivPrevio.badgeEl) elDivPrevio.badgeEl.textContent = elDivPrevio.badgeOrig;
+      elDivPrevio = null;
+    }
+    if (curIdx < 0 || !playlist[curIdx] || !hayProyeccion) return;
+    const esPred = tabActiva === "predica" && enPredica;
+    let cont = null;
+    if (esPred) cont = predList;
+    else if (tabActiva === "busqueda") cont = resultList;
+    else if (tabActiva === "versiculo") cont = verseList;
+    if (!cont || cont.style.display === "none") return;
+    const el = cont.querySelector((esPred ? ".predica-item" : ".verse") + '[data-i="' + curIdx + '"]');
+    if (!el) return;
+    const it = playlist[curIdx];
+    const badgeEl = el.querySelector(esPred ? ".ppartes" : ".pbadge");
+    const textoEl = el.querySelector(esPred ? ".predtext" : ".vtext");
+    if (!textoEl) return;
+    const nP = partesInfo ? partesInfo.count : rangesDe(it).length;
+    if (modoResaltar) {
+      elDivPrevio = { textoEl: textoEl, badgeEl: badgeEl, orig: textoEl.innerHTML,
+                      badgeOrig: badgeEl ? badgeEl.textContent : "" };
+      if (badgeEl) badgeEl.textContent = nP > 1 ? "✂️ Parte " + (curPart + 1) + " de " + nP : "";
+      textoEl.innerHTML = it.words.map((w, i) =>
+        `<span class="palabra${w.h ? " resaltada" : ""}" data-w="${i}"` +
+        (w.h ? ` style="background-color:${w.h}"` : "") + `>${escapeHtml(w.t)}</span>`).join(" ");
+      return;
+    }
+    if (nP < 2) {
+      if (badgeEl && badgeEl.textContent) badgeEl.textContent = "";  // la pantalla dice que NO va dividido
+      // v28: con colores del resaltado se repinta igual (para que se sigan viendo)
+      if (it.words.some(w => w.h)) {
+        elDivPrevio = { textoEl: textoEl, badgeEl: badgeEl, orig: textoEl.innerHTML,
+                        badgeOrig: badgeEl ? badgeEl.textContent : "" };
+        textoEl.innerHTML = htmlPartes(it, [0, it.words.length], esPred ? "" : (tabActiva === "busqueda" ? qBusqueda : ""));
+      }
+      return;
+    }
+    elDivPrevio = { textoEl: textoEl, badgeEl: badgeEl, orig: textoEl.innerHTML,
+                    badgeOrig: badgeEl ? badgeEl.textContent : "" };
+    if (badgeEl) badgeEl.textContent = "✂️ Parte " + (curPart + 1) + " de " + nP;
+    const rs = rangesDe(it);
+    const r = rs[Math.min(curPart, rs.length - 1)] || rs[0];
+    textoEl.innerHTML = htmlPartes(it, r, esPred ? "" : (tabActiva === "busqueda" ? qBusqueda : ""));
+  }
+
   // Fila de proyección: próximas partes del versículo y versículo siguiente
   function calcularCola() {
     colaProxima = [];
@@ -485,16 +564,12 @@
     actualizarPreview(); marcarSeleccion();
   }
 
-  // v27: en las vistas de LISTA (lista del capitulo, predicacion, busqueda) el
-  // recuadro verde de arriba se OCULTA: el versiculo proyectado ya queda resaltado
-  // en la lista y verlo dos veces (arriba en verde + en la lista) confundia.
-  // Sigue visible en cuadricula / libro / capitulo y en el modo Resaltar.
-  function previewEnLista() {
-    if (tabActiva === "predica" || tabActiva === "busqueda") return true;
-    return tabActiva === "versiculo" && verseList.style.display !== "none";
-  }
+  // v27/v28: el recuadro verde de arriba se RETIRA DEL TODO: la cuadricula
+  // muestra solo la cuadrilla de numeros (sin texto ni fila de "siguiente"), y
+  // en las listas el versiculo proyectado queda marcado ahi mismo (verde/
+  // negrita + cartel de la division + resaltado sobre las palabras).
   function actualizarVisibilidadPreview() {
-    preview.style.display = (hayProyeccion && (modoResaltar || !previewEnLista())) ? "flex" : "none";
+    preview.style.display = "none";
   }
   function actualizarPreview() {
     if (curIdx < 0) { actualizarVisibilidadPreview(); editVerseButton.disabled = true; predicaAddButton.disabled = true; return; }
@@ -592,8 +667,12 @@
     editVerseButton.textContent = modoResaltar ? "✕ Terminar resaltado" : "🖍️ Resaltar";
     const it = playlist[curIdx];
     if (modoResaltar) {
+      // v28: el resaltado se hace DENTRO de la lista -> llevar la vista al item
+      // proyectado (lista del capitulo, busqueda o predicacion)
+      if (enPredica) activarTab("predica");
+      else if (tabActiva !== "busqueda" && tabActiva !== "versiculo") activarTab("versiculo");
+      if (tabActiva === "versiculo" && verseList.style.display === "none") verLista();
       document.body.classList.add("resaltando");
-      window.scrollTo(0, 0);
       it.words = it.words.map(w => ({ t: w.t, h: "" }));
       if (ws && ws.readyState === WebSocket.OPEN) {
         const pid = ++pidEnvio;
@@ -607,14 +686,21 @@
                   chapter: it.chapter, verse: it.verse }
         }));
       }
+    } else {
+      document.body.classList.remove("resaltando");  // v28: al salir se apaga la paleta
     }
     actualizarPreview();
+    marcarSeleccion();  // v28: pinta el item con palabras tocables (y lo deja normal al salir)
   });
 
-  curText.addEventListener("click", (e) => {
+  // v28: el resaltado se hace sobre las palabras DENTRO de la lista (el item
+  // proyectado: lista del capitulo, busqueda o predicacion). El recuadro de
+  // arriba ya no participa.
+  function clickPalabraResaltar(e) {
     if (!modoResaltar || curIdx < 0) return;
     const sp = e.target.closest(".palabra");
     if (!sp) return;
+    e.stopPropagation();
     const i = Number(sp.dataset.w);
     const w = playlist[curIdx].words[i];
     if (w.h) {
@@ -639,7 +725,11 @@
                 chapter: it.chapter, verse: it.verse }
       }));
     }
-  });
+  }
+  curText.addEventListener("click", clickPalabraResaltar);   // oculto desde v28, queda por compatibilidad
+  verseList.addEventListener("click", clickPalabraResaltar);
+  resultList.addEventListener("click", clickPalabraResaltar);
+  predList.addEventListener("click", clickPalabraResaltar);
 
   // ================= PREDICACIÓN =================
   const MAX_PREDICA = 60;
@@ -692,7 +782,7 @@
       main.className = "pmain";
       const texto = p.words.map(w => w.t).join(" ");  // v27: el versiculo entero, no solo la mencion
       main.innerHTML = `<div class="predref">${escapeHtml(p.bookName)} ${p.chapter}:${p.verse}</div>` +
-                       (nEst > 1 ? `<div class="ppartes">✂️ ${nEst} partes</div>` : "") +
+                       `<div class="ppartes">${nEst > 1 ? "✂️ " + nEst + " partes" : ""}</div>` +
                        `<div class="predtext">${escapeHtml(texto)}</div>` +
                        (meta ? `<div class="predmeta">· ${escapeHtml(meta)}</div>` : "");
       const up = document.createElement("button");
@@ -717,7 +807,7 @@
       div.appendChild(up);
       div.appendChild(dn);
       div.appendChild(del);
-      div.addEventListener("click", () => proyectarPredica(i));
+      div.addEventListener("click", () => { if (modoResaltar) return; proyectarPredica(i); });  // v28
       predList.appendChild(div);
     });
     actualizarBadgePredica();
@@ -1062,12 +1152,15 @@
       }
       const contenido = document.createElement("div");
       contenido.className = "vcontenido";
+      // v28: cartel de la division ARRIBA del texto (se llena en pintarDivisionLista):
+      // en un versiculo largo, debajo quedaria fuera de pantalla
       if (conReferencia) {
         contenido.innerHTML =
           `<div class="search-ref">${escapeHtml(it.bookName)} ${it.chapter}:${it.verse}</div>` +
+          `<div class="pbadge"></div>` +
           `<div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
       } else {
-        contenido.innerHTML = `<div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
+        contenido.innerHTML = `<div class="pbadge"></div><div class="vtext">${resaltarQ(it.words.map(w=>w.t).join(" "), marcarQ)}</div>`;
       }
       div.appendChild(contenido);
       const ab = document.createElement("button");
@@ -1082,6 +1175,7 @@
       });
       div.appendChild(ab);
       div.addEventListener("click", async () => {
+        if (modoResaltar) return;  // v28: en modo resaltar se tocan palabras, no se navega
         if (enPredica) await (fuente === "busq" ? restaurarBusqueda() : restaurarCapitulo());
         // v27: tocar de nuevo el versiculo ya proyectado -> parte siguiente (si esta
         // dividido); otro versiculo -> se proyecta desde la parte 1.
@@ -1119,24 +1213,20 @@
       else if (r.bottom > window.innerHeight - 190) dy = r.bottom - (window.innerHeight - 190);
       if (dy !== 0) window.scrollTo({ top: window.scrollY + dy, behavior: "smooth" });
     }
+    pintarDivisionLista();  // v28: cartel de la division + parte activa / palabras del resaltado
   }
 
   function verLista() {
     verseList.style.display = "block";
     verseGrid.style.display = "none";
-    dotsButton.textContent = "🔲 Cuadrícula";
     actualizarVisibilidadPreview();  // v27
     marcarSeleccion();
   }
   function verGrilla() {
     verseList.style.display = "none";
     verseGrid.style.display = "grid";
-    dotsButton.textContent = "⋮ Lista";
     actualizarVisibilidadPreview();  // v27
   }
-  dotsButton.addEventListener("click", () => {
-    (verseList.style.display === "none") ? verLista() : verGrilla();
-  });
 
   function activarTab(name) {
     const yaActiva = tabActiva === name;
