@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proyección - Biblia Sincronizada</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     /* ---------- FUENTE CMG SANS INCRUSTADA (no depende de internet) ----------
        Las tres variantes son las fuentes originales de Church Motion Graphics
@@ -112,6 +113,34 @@
     .status.connected { background: #dcece5; color: #173f35; }
 
     mark { color: #111; border-radius: 3px; }
+/* ---------- MODO GAMER (añadido v27): neón azul noche. Los otros modos
+   no se tocán. Requiere "gamer" en la lista FONDOS de este archivo. ---------- */
+    body.f-gamer {
+      background:
+        radial-gradient(1200px 520px at 85% -10%, rgba(59,130,246,.16), transparent 60%),
+        radial-gradient(900px 480px at -8% 110%, rgba(139,92,246,.13), transparent 55%),
+        linear-gradient(180deg, #0B1026 0%, #101735 100%);
+      color: #F1F5F9;
+    }
+    body.f-gamer .reference {
+      color: #67E8F9;
+      text-shadow: 0 0 22px rgba(34,211,238,.35);
+      font-family: 'Orbitron', 'CMG Sans', 'Roboto', sans-serif;
+      letter-spacing: .06em;
+    }
+    body.f-gamer .text {
+      font-family: 'Space Grotesk', 'CMG Sans', 'Roboto', sans-serif;
+      text-shadow: 0 2px 18px rgba(34,211,238,.15);
+    }
+    body.f-gamer mark { color: #08111F; }
+    body.f-gamer .palabra { color: #08111F; }
+    body.f-gamer .status { background: rgba(34,211,238,.14); color: #A5F3FC; opacity:.85; }
+    body.f-gamer .status.connected { background: rgba(34,211,238,.24); color: #A5F3FC; }
+    body.f-gamer #partBadge { background: linear-gradient(135deg,#22D3EE,#3B82F6); color: #08111F; }
+    body.f-gamer .fullscreen-button { background: rgba(34,211,238,.18); color: #A5F3FC; }
+    body.f-gamer #startOverlay { background: rgba(2,6,23,.90); }
+    body.f-gamer #startBtn { background: linear-gradient(135deg,#22D3EE 0%,#3B82F6 100%); color: #08111F; box-shadow: 0 4px 24px rgba(34,211,238,.35); }
+    body.f-gamer .ov-note { color: #94A3B8; }
 
     #startOverlay {
       position: fixed; inset: 0; z-index: 50;
@@ -190,7 +219,7 @@
     }
 
     // ---------- FONDOS ----------
-    const FONDOS = ["claro", "doodle-claro", "sepia", "oscuro", "doodle-oscuro", "azul"];
+    const FONDOS = ["claro", "doodle-claro", "sepia", "oscuro", "doodle-oscuro", "azul", "gamer"];
     function doodleSVG(color, op) {
       const s =
         "<g fill='none' stroke='" + color + "' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' opacity='" + op + "'>" +
