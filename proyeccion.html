@@ -198,6 +198,61 @@
     }
     #startBtn:active { transform: scale(0.97); }
     .ov-note { margin-top: 18px; font-size: 15px; color: #b9c6c0; line-height: 1.5; }
+
+    /* ===== v32: CANDADO de pantalla ===== */
+    /* Overlay con el código de 4 letras + botón liberar. Visible cuando la
+       pantalla está libre (sin dueño). */
+    #lockOverlay {
+      position: fixed; inset: 0; z-index: 60;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 28px;
+      background: linear-gradient(180deg, rgba(8,12,30,.96), rgba(2,6,23,.98));
+      padding: 24px;
+    }
+    #lockOverlay.hidden { display: none; }
+    .lock-title {
+      font-family: 'Orbitron', 'CMG Sans', sans-serif; font-weight: 900;
+      font-size: clamp(26px, 4vw, 48px); color: #67E8F9; letter-spacing: 2px;
+      text-shadow: 0 0 26px rgba(34,211,238,.45);
+    }
+    .lock-sub { color: #94A3B8; font-size: clamp(16px, 2vw, 22px); margin-top: -16px; }
+    .lock-code-box {
+      display: flex; gap: clamp(12px, 2vw, 22px);
+      padding: clamp(20px, 3vw, 36px) clamp(28px, 4vw, 56px);
+      background: rgba(148,163,184,.10); border: 2px solid rgba(34,211,238,.35);
+      border-radius: 22px; box-shadow: 0 0 40px rgba(34,211,238,.18), inset 0 0 30px rgba(2,6,23,.4);
+    }
+    .lock-digit {
+      width: clamp(56px, 8vw, 96px); height: clamp(72px, 10vw, 120px);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Orbitron', 'CMG Sans', monospace; font-weight: 900;
+      font-size: clamp(48px, 7vw, 92px);
+      color: #FBBF24;
+      background: rgba(2,6,23,.7);
+      border: 2px solid rgba(251,191,36,.4);
+      border-radius: 14px;
+      text-shadow: 0 0 20px rgba(251,191,36,.55), 0 0 8px rgba(251,191,36,.7);
+    }
+    /* Modo apocalíptico: candado en rojo/dorado en vez de cian/dorado */
+    body.f-apocaliptico #lockOverlay { background: linear-gradient(180deg, rgba(26,5,0,.97), rgba(15,4,0,.98)); }
+    body.f-apocaliptico .lock-title { color: #FFB800; text-shadow: 0 0 26px rgba(255,100,0,.6); }
+    body.f-apocaliptico .lock-sub { color: #FFB888; }
+    body.f-apocaliptico .lock-code-box { border-color: rgba(255,107,0,.5); box-shadow: 0 0 40px rgba(255,80,0,.30); }
+    body.f-apocaliptico .lock-digit { border-color: rgba(255,107,0,.55); }
+    .lock-foot { color: #64748B; font-size: clamp(13px, 1.6vw, 17px); text-align: center; max-width: 600px; line-height: 1.6; }
+    .lock-foot b { color: #94A3B8; }
+    .lock-owner {
+      position: fixed; top: 18px; right: 18px; z-index: 70;
+      display: none; align-items: center; gap: 10px;
+      padding: 8px 14px; border-radius: 22px;
+      background: rgba(34,211,238,.16); border: 1px solid rgba(34,211,238,.4);
+      color: #A5F3FC; font-family: 'CMG Sans', sans-serif; font-size: 14px; font-weight: bold;
+      cursor: pointer; box-shadow: 0 4px 18px rgba(2,6,23,.4);
+    }
+    body.f-apocaliptico .lock-owner { background: rgba(255,107,0,.18); border-color: rgba(255,107,0,.5); color: #FFD580; }
+    .lock-owner.visible { display: flex; }
+    .lock-owner .dot { width: 9px; height: 9px; border-radius: 50%; background: #22D3EE; box-shadow: 0 0 8px #22D3EE; }
+    body.f-apocaliptico .lock-owner .dot { background: #FF6B00; box-shadow: 0 0 8px #FF6B00; }
   </style>
 </head>
 <body class="f-claro">
@@ -217,6 +272,23 @@
     </div>
   </div>
 
+  <!-- v32: candado de pantalla -->
+  <div id="lockOverlay">
+    <div class="lock-title">🔒 PANTALLA LIBRE</div>
+    <div class="lock-sub">El predicador debe tipear este código en su teléfono:</div>
+    <div class="lock-code-box">
+      <div class="lock-digit" id="codeDigit0">-</div>
+      <div class="lock-digit" id="codeDigit1">-</div>
+      <div class="lock-digit" id="codeDigit2">-</div>
+      <div class="lock-digit" id="codeDigit3">-</div>
+    </div>
+    <div class="lock-foot">Decile el código al predicador, o que lo mire de la pantalla.<br>El código cambia cuando se libera la pantalla (botón de arriba a la derecha) o cuando se reinicia la compu.</div>
+  </div>
+  <div id="lockOwner" class="lock-owner" title="Liberar la pantalla">
+    <span class="dot"></span>
+    <span>Pantalla tomada · tocar para liberar</span>
+  </div>
+
   <script>
     const reference = document.getElementById("reference");
     const text = document.getElementById("text");
@@ -226,6 +298,8 @@
     const main = document.getElementById("main");
     const startOverlay = document.getElementById("startOverlay");
     const startBtn = document.getElementById("startBtn");
+    const lockOverlay = document.getElementById("lockOverlay");
+    const lockOwner = document.getElementById("lockOwner");
 
     let ws;
     let ultimoData = null;
@@ -234,6 +308,78 @@
     let parteActual = 0;
 
     const MAX_LINEAS = 4;
+
+    // ===== v32: CANDADO de pantalla =====
+    // Sin 0, O, 1, I, L para no confundir al dictar.
+    const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let codigoPantalla = "";      // 4 letras que ve el predicador en la pantalla
+    let duenoId = "";             // adminId del predicador que tomó el control
+    let ultimoHeartbeat = 0;      // ts del último mensaje del dueño
+    const TIMEOUT_DUENO_MS = 10 * 60 * 1000;  // 10 min sin actividad -> libera solo
+    let inactividadTimer = null;
+
+    function genCodigo() {
+      let s = "";
+      for (let i = 0; i < 4; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+      return s;
+    }
+    function pintarCodigo() {
+      for (let i = 0; i < 4; i++) {
+        document.getElementById("codeDigit" + i).textContent = codigoPantalla[i];
+      }
+    }
+    function mostrarLockOverlay() {
+      lockOverlay.classList.remove("hidden");
+      lockOwner.classList.remove("visible");
+    }
+    function ocultarLockOverlay() {
+      lockOverlay.classList.add("hidden");
+      lockOwner.classList.add("visible");
+    }
+    function liberarPantalla(avisoAdmin) {
+      if (avisoAdmin && duenoId && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: "project",
+          reference: "",
+          data: { type: "auth-lost", adminId: duenoId }
+        }));
+      }
+      duenoId = "";
+      ultimoData = null;
+      totalPartes = 1; parteActual = 0;
+      reference.textContent = "Biblia Sincronizada";
+      text.className = "text waiting";
+      text.innerHTML = "Esperando que el predicador proyecte un versículo...";
+      partBadge.style.display = "none";
+      codigoPantalla = genCodigo();
+      try { sessionStorage.setItem("proyCodigo", codigoPantalla); } catch(e) {}
+      pintarCodigo();
+      mostrarLockOverlay();
+    }
+    // botón de liberar (arriba a la derecha cuando hay dueño)
+    lockOwner.addEventListener("click", () => {
+      if (!duenoId) return;
+      if (!confirm("¿Liberar la pantalla? Se generará un código nuevo.")) return;
+      liberarPantalla(true);
+    });
+    // timeout de inactividad: si pasan 10 min sin que el dueño mande nada, libera
+    function reiniciarInactividad() {
+      ultimoHeartbeat = Date.now();
+      clearTimeout(inactividadTimer);
+      inactividadTimer = setTimeout(() => {
+        if (duenoId) {
+          console.log("Pantalla liberada por inactividad (10 min).");
+          liberarPantalla(true);
+        }
+      }, TIMEOUT_DUENO_MS);
+    }
+    // al iniciar: recuperar el código de sessionStorage si existe (recarga de página)
+    try {
+      codigoPantalla = sessionStorage.getItem("proyCodigo") || genCodigo();
+      sessionStorage.setItem("proyCodigo", codigoPantalla);
+    } catch(e) { codigoPantalla = genCodigo(); }
+    pintarCodigo();
+    mostrarLockOverlay();
 
     // ---------- ABREVIATURAS ----------
     function normalizar(s) {
@@ -386,6 +532,52 @@
 
     function mostrarProyeccion(data) {
       if (!data) return;
+      // v32: auth y release NO se filtran por adminId (los puede mandar cualquiera)
+      if (data.type === "auth") {
+        // predicador pide tomar el control con el código
+        if (!data.codigo || !data.adminId) return;
+        if (data.codigo.toUpperCase() === codigoPantalla) {
+          // código correcto: si no hay dueño, lo tomo. Si hay dueño, deny.
+          if (duenoId && duenoId !== data.adminId) {
+            ws.send(JSON.stringify({
+              type: "project", reference: "",
+              data: { type: "auth-deny", adminId: data.adminId }
+            }));
+          } else {
+            duenoId = data.adminId;
+            ocultarLockOverlay();
+            reiniciarInactividad();
+            ws.send(JSON.stringify({
+              type: "project", reference: "",
+              data: { type: "auth-ok", adminId: duenoId }
+            }));
+          }
+        } else {
+          // código incorrecto
+          ws.send(JSON.stringify({
+            type: "project", reference: "",
+            data: { type: "auth-deny", adminId: data.adminId }
+          }));
+        }
+        return;
+      }
+      if (data.type === "release") {
+        // el dueño libera la pantalla
+        if (duenoId && data.adminId === duenoId) liberarPantalla(false);
+        return;
+      }
+      // v32: filtrar verse/theme/parts-info por adminId del dueño
+      // (si no hay dueño o el adminId no coincide, NO se muestra). Así evitamos
+      // que 3 admins con la URL proyecten al mismo tiempo.
+      if (data.adminId && duenoId && data.adminId !== duenoId) return;
+      // auto-tomar el control si un admin (el primero que manda algo) ya había
+      // hecho auth: el dueño se setea solo con el primer project legítimo.
+      if (data.adminId && !duenoId) {
+        // si no hay dueño todavía, no dejamos que se proyecte sin auth previo.
+        // el admin debería haber mandado auth antes.
+        return;
+      }
+      reiniciarInactividad();
       if (data.type === "verse") {
         if (!startOverlay.classList.contains("hidden")) {
           ocultarOverlay();
@@ -428,7 +620,8 @@
           verse: ultimoData.verse,
           chapter: ultimoData.chapter,
           bookNumber: ultimoData.bookNumber,
-          pid: ultimoData.pid
+          pid: ultimoData.pid,
+          adminId: duenoId  // v32: para que otros admins lo ignoren
         }
       }));
     }
