@@ -229,13 +229,68 @@
   }
 
   .status { padding:6px 12px 4px; font-size:13px; color:var(--texto-dim); font-family:'Share Tech Mono', monospace; display:flex; gap:12px; align-items:center; }
-  @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }</style>
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+
+  /* ===== v32: CANDADO de pantalla (auth con código) ===== */
+  #authOverlay {
+    position:fixed; inset:0; z-index:100;
+    background:rgba(2,6,18,.93); backdrop-filter:blur(6px);
+    display:flex; align-items:center; justify-content:center;
+    padding:18px;
+  }
+  #authOverlay.hidden { display:none; }
+  .auth-card {
+    background:var(--superf); border:1px solid var(--borde); border-radius:18px;
+    padding:24px 20px; max-width:380px; width:100%; text-align:center;
+    box-shadow:0 18px 60px rgba(0,0,0,.6);
+  }
+  .auth-title { font-family:'Orbitron', Arial, sans-serif; font-weight:900; font-size:22px; color:var(--acento); text-shadow:var(--glow-cyan); margin-bottom:6px; letter-spacing:1px; }
+  .auth-sub { color:var(--texto-dim); font-size:14px; margin-bottom:18px; line-height:1.45; }
+  .auth-input {
+    width:100%; padding:14px 12px; font-size:30px; font-weight:bold; text-align:center;
+    letter-spacing:10px; text-transform:uppercase; font-family:'Share Tech Mono', monospace;
+    background:var(--superf2); color:var(--texto); border:2px solid var(--borde);
+    border-radius:12px; outline:none;
+  }
+  .auth-input:focus { border-color:var(--acento); box-shadow:var(--glow-cyan-s); }
+  .auth-input.error { border-color:var(--rojo); box-shadow:var(--glow-rojo); animation:shake .35s; }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+  .auth-btn {
+    margin-top:14px; width:100%; padding:14px; border:none; border-radius:12px;
+    background:var(--acento); color:var(--tinta); font-size:17px; font-weight:bold; cursor:pointer;
+    box-shadow:var(--glow-cyan); font-family:'Rajdhani', Arial, sans-serif; letter-spacing:.5px;
+  }
+  .auth-btn:active { transform:scale(.98); }
+  .auth-msg { margin-top:10px; font-size:13px; color:var(--rojo); min-height:18px; font-weight:bold; }
+  .auth-hint { margin-top:14px; font-size:12px; color:var(--texto-dim); line-height:1.5; }
+
+  /* Indicador de candado en el header */
+  #lockIcon { font-size:18px; cursor:pointer; padding:0 4px; user-select:none; }
+  #lockIcon.dueno { color:var(--verde); text-shadow:var(--glow-verde); }
+  #lockIcon.libre { color:var(--rojo); }
+  body.sin-control .actions button,
+  body.sin-control .fondos-row,
+  body.sin-control .tabs { opacity:.55; pointer-events:none; }
+  body.sin-control .preview { display:none !important; }
+</style>
 </head>
 <body>
 <header>
   <h1>📖 Biblia Sincronizada</h1>
-  <div class="hdrder"><span>v31 · <span id="connectedCount">0</span> conect.</span><button id="modoBtn" type="button" title="Cambiar a modo claro">☀️</button></div>
+  <div class="hdrder"><span>v32 · <span id="connectedCount">0</span> conect.</span><span id="lockIcon" class="libre" title="Sin control de la pantalla">🔒</span><button id="modoBtn" type="button" title="Cambiar a modo claro">☀️</button></div>
 </header>
+
+<!-- v32: candado de pantalla -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-title">🔐 TOMAR EL CONTROL</div>
+    <div class="auth-sub">Mirá la pantalla de proyección y tipeá el <b>código de 4 letras</b> que aparece arriba.</div>
+    <input id="authInput" class="auth-input" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD">
+    <button id="authBtn" class="auth-btn">Proyectar →</button>
+    <div class="auth-msg" id="authMsg"></div>
+    <div class="auth-hint">El código cambia cada sábado, cuando se libera la pantalla o cuando se reinicia.<br>Si ya estás proyectando y ves este cartel, alguien liberó la pantalla o se reinició: volvé a tipear el código.</div>
+  </div>
+</div>
 
 <div class="topbar">
   <select id="version"><option value="">Versión…</option></select>
@@ -374,6 +429,93 @@
   try { favoritos = JSON.parse(localStorage.getItem("bibFav") || "[]"); } catch(e) { favoritos = []; }
   try { historial = JSON.parse(localStorage.getItem("bibHist") || "[]"); } catch(e) { historial = []; }
 
+  // ===== v32: CANDADO de pantalla =====
+  // adminId por sesión (se borra al cerrar el navegador). codigo: el que el
+  // predicador tipea al entrar. esDueno: la pantalla le contestó "sos el dueño".
+  function genAdminId() {
+    const c = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let s = "";
+    for (let i = 0; i < 8; i++) s += c[Math.floor(Math.random() * c.length)];
+    return s;
+  }
+  let adminId = "";
+  try {
+    adminId = sessionStorage.getItem("adminId") || genAdminId();
+    sessionStorage.setItem("adminId", adminId);
+  } catch(e) { adminId = genAdminId(); }
+  let codigo = "";          // código de 4 letras que tipea el predicador
+  let esDueno = false;      // la pantalla nos reconoció como dueño
+  let authTimer = null;
+  const authOverlay = document.getElementById("authOverlay");
+  const authInput = document.getElementById("authInput");
+  const authBtn = document.getElementById("authBtn");
+  const authMsg = document.getElementById("authMsg");
+  const lockIcon = document.getElementById("lockIcon");
+
+  function actualizarCandadoUI() {
+    document.body.classList.toggle("sin-control", !esDueno);
+    lockIcon.classList.toggle("dueno", esDueno);
+    lockIcon.classList.toggle("libre", !esDueno);
+    lockIcon.textContent = esDueno ? "🔓" : "🔒";
+    lockIcon.title = esDueno ? "Tenés el control de la pantalla · tocá para liberar"
+                             : "Sin control de la pantalla · tocá para tipear el código";
+  }
+  function pedirCodigo() {
+    codigo = "";
+    esDueno = false;
+    actualizarCandadoUI();
+    authOverlay.classList.remove("hidden");
+    authInput.value = "";
+    authMsg.textContent = "";
+    setTimeout(() => authInput.focus(), 50);
+  }
+  function enviarAuth() {
+    const c = authInput.value.trim().toUpperCase();
+    authMsg.textContent = "";
+    if (c.length !== 4) {
+      authInput.classList.add("error");
+      setTimeout(() => authInput.classList.remove("error"), 400);
+      authMsg.textContent = "El código tiene 4 letras.";
+      return;
+    }
+    codigo = c;
+    authBtn.textContent = "Conectando…";
+    authBtn.disabled = true;
+    // envío auth; la pantalla contesta auth-ok o auth-deny (manejados abajo)
+    wsSendRaw(JSON.stringify({
+      type: "project",
+      reference: "",
+      data: { type: "auth", codigo: codigo, adminId: adminId }
+    }));
+    // si en 4 seg no contesta, reactivar el botón
+    clearTimeout(authTimer);
+    authTimer = setTimeout(() => {
+      authBtn.textContent = "Proyectar →";
+      authBtn.disabled = false;
+      authMsg.textContent = "La pantalla no responde. ¿Está abierta? Reintentá.";
+    }, 4000);
+  }
+  authBtn.addEventListener("click", enviarAuth);
+  authInput.addEventListener("input", () => {
+    authInput.value = authInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    authMsg.textContent = "";
+  });
+  authInput.addEventListener("keydown", (e) => { if (e.key === "Enter") enviarAuth(); });
+  lockIcon.addEventListener("click", () => {
+    if (esDueno) {
+      if (!confirm("¿Liberar la pantalla? Otro predicador podrá tomar el control con un código nuevo.")) return;
+      // avisar a la pantalla que liberamos; ella generará código nuevo
+      wsSendRaw(JSON.stringify({
+        type: "project",
+        reference: "",
+        data: { type: "release", adminId: adminId }
+      }));
+      pedirCodigo();
+    } else {
+      pedirCodigo();
+    }
+  });
+
   // ===== Lista de predicación (orden = orden de selección) =====
   let predicaItems = [];
   let enPredica = false;
@@ -395,14 +537,39 @@
   }
 
   // ---------- WebSocket ----------
+  // wsSendRaw: envío directo, sin candado (lo usan los mensajes internos de auth).
+  // ws.send queda envuelto: a cada mensaje "project" le agrega adminId, así la
+  // pantalla sabe de qué admin viene y puede filtrar.
+  function wsSendRaw(payload) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(payload);
+  }
+  function wsSendConCandado(payload) {
+    try {
+      const msg = JSON.parse(payload);
+      if (msg.type === "project" && msg.data && !msg.data.adminId) {
+        msg.data.adminId = adminId;
+      }
+      wsSendRaw(JSON.stringify(msg));
+    } catch(e) { wsSendRaw(payload); }
+  }
   function connectWebSocket() {
     const p = location.protocol === "https:" ? "wss:" : "ws:";
     ws = new WebSocket(`${p}//${location.host}`);
+    // v32: envolver ws.send para inyectar adminId en cada project
+    ws.send = wsSendConCandado;
     ws.addEventListener("open", () => {
       wsStatus.textContent = "Conectado";
+      // si ya había hecho auth antes (código en sessionStorage), reautenticar
       try {
-        const f = localStorage.getItem("adminFondo");
-        if (f) enviarFondo(f);
+        const codGuardado = sessionStorage.getItem("adminCodigo");
+        if (codGuardado && codGuardado.length === 4) {
+          codigo = codGuardado;
+          wsSendRaw(JSON.stringify({
+            type: "project",
+            reference: "",
+            data: { type: "auth", codigo: codigo, adminId: adminId }
+          }));
+        }
       } catch(e) {}
     });
     ws.addEventListener("close", () => { wsStatus.textContent = "Desconectado"; setTimeout(connectWebSocket, 2000); });
@@ -413,6 +580,44 @@
         if (data.type === "connected") { connectedCount.textContent = data.count; return; }
         if (data.type === "projection") {
           const d = data.data || {};
+          // v32: manejo del candado (auth-ok / auth-deny / auth-lost)
+          if (d.type === "auth-ok" && d.adminId === adminId) {
+            clearTimeout(authTimer);
+            esDueno = true;
+            actualizarCandadoUI();
+            authOverlay.classList.add("hidden");
+            try { sessionStorage.setItem("adminCodigo", codigo); } catch(e) {}
+            // al reconectar el WS, si la pantalla ya nos conocía como dueño,
+            // reenviamos el fondo para que se vea igual que antes.
+            try {
+              const f = localStorage.getItem("adminFondo");
+              if (f) enviarFondo(f);
+            } catch(e) {}
+            // si hay un versículo activo, re-proyectarlo para que la pantalla
+            // lo muestre (caso: reconexión de WS)
+            if (curIdx >= 0 && playlist[curIdx]) proyectar(curIdx, curPart);
+            return;
+          }
+          if (d.type === "auth-deny" && d.adminId === adminId) {
+            clearTimeout(authTimer);
+            esDueno = false;
+            actualizarCandadoUI();
+            authBtn.textContent = "Proyectar →";
+            authBtn.disabled = false;
+            authInput.classList.add("error");
+            setTimeout(() => authInput.classList.remove("error"), 400);
+            authMsg.textContent = "Pantalla ocupada por otro predicador o código incorrecto.";
+            return;
+          }
+          if (d.type === "auth-lost" && d.adminId === adminId) {
+            // la pantalla nos quitó el control (liberó o reinició): pedir código
+            toast("La pantalla fue liberada. Volvé a ingresar el código.");
+            pedirCodigo();
+            return;
+          }
+          // Anti-eco de parts-info: la pantalla manda el adminId del dueño en
+          // cada parts-info. Si no es el nuestro, ignorar.
+          if (d.type === "parts-info" && d.adminId && d.adminId !== adminId) return;
           if (d.type === "parts-info" && curIdx >= 0) {
             const v = playlist[curIdx];
             if (v && Number(d.verse) === Number(v.verse) && Number(d.chapter) === Number(v.chapter)
@@ -430,6 +635,9 @@
 
   function enviarFondo(id) {
     if (ws && ws.readyState === WebSocket.OPEN) {
+      // theme es broadcast a todos (incluye proyección y culto sabático): NO
+      // filtramos por candado, solo por adminId. Si no sos dueño, la pantalla
+      // igual lo ignora y Culto Sabático lo vea (no rompe nada).
       ws.send(JSON.stringify({ type: "project", reference: "", data: { type: "theme", fondo: id } }));
     }
   }
@@ -1396,6 +1604,14 @@
 
   cargarVersiones();
   connectWebSocket();
+  // v32: arranca pidiendo el código de la pantalla. Si la sesión ya lo tenía
+  // guardado (recarga de página), el WS lo reenvía solo al abrir.
+  actualizarCandadoUI();
+  try {
+    const codGuardado = sessionStorage.getItem("adminCodigo");
+    if (!codGuardado || codGuardado.length !== 4) pedirCodigo();
+    else { codigo = codGuardado; authOverlay.classList.add("hidden"); }
+  } catch(e) { pedirCodigo(); }
 </script>
 </body>
 </html>
