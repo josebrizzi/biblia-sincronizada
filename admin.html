@@ -537,11 +537,12 @@
   }
 
   // ---------- WebSocket ----------
-  // wsSendRaw: envío directo, sin candado (lo usan los mensajes internos de auth).
-  // ws.send queda envuelto: a cada mensaje "project" le agrega adminId, así la
-  // pantalla sabe de qué admin viene y puede filtrar.
+  // v32: candado de pantalla. ws.send queda envuelto para inyectar adminId
+  // en cada "project". Pero hay que usar wsSendReal (el send original del WS)
+  // para no caer en recursión: wsSendRaw -> ws.send (wrapper) -> wsSendRaw ...
+  let wsSendReal = null;
   function wsSendRaw(payload) {
-    if (ws && ws.readyState === WebSocket.OPEN) ws.send(payload);
+    if (wsSendReal && typeof wsSendReal === "function") wsSendReal.call(ws, payload);
   }
   function wsSendConCandado(payload) {
     try {
@@ -555,7 +556,8 @@
   function connectWebSocket() {
     const p = location.protocol === "https:" ? "wss:" : "ws:";
     ws = new WebSocket(`${p}//${location.host}`);
-    // v32: envolver ws.send para inyectar adminId en cada project
+    // v32: guardar el send real del WS ANTES de envolverlo, para no recursar
+    wsSendReal = ws.send.bind(ws);
     ws.send = wsSendConCandado;
     ws.addEventListener("open", () => {
       wsStatus.textContent = "Conectado";
