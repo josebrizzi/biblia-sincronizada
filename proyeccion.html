@@ -142,6 +142,47 @@
     body.f-gamer #startBtn { background: linear-gradient(135deg,#22D3EE 0%,#3B82F6 100%); color: #08111F; box-shadow: 0 4px 24px rgba(34,211,238,.35); }
     body.f-gamer .ov-note { color: #94A3B8; }
 
+    /* ---------- MODO APOCALÍPTICO: fuego, brasas y cenizas. Colores vibrantes
+       (rojo/naranja/dorado) sobre fondo carbón, con la MISMA tipografía que el
+       modo gamer (Orbitron + Space Grotesk). Requiere "apocaliptico" en la
+       lista FONDOS de este archivo. ---------- */
+    body.f-apocaliptico {
+      background:
+        radial-gradient(1200px 540px at 50% -12%, rgba(255,120,0,.42), transparent 60%),
+        radial-gradient(900px 500px at 18% 112%, rgba(220,38,38,.38), transparent 55%),
+        radial-gradient(720px 400px at 92% 80%, rgba(251,191,36,.26), transparent 55%),
+        radial-gradient(420px 220px at 70% 40%, rgba(255,80,0,.22), transparent 60%),
+        linear-gradient(180deg, #1A0500 0%, #2D0A00 45%, #160300 100%);
+      color: #FFF5E1;
+    }
+    body.f-apocaliptico .reference {
+      color: #FFB800;
+      text-shadow: 0 0 26px rgba(255,100,0,.65), 0 0 10px rgba(255,200,0,.45);
+      font-family: 'Orbitron', 'CMG Sans', 'Roboto', sans-serif;
+      letter-spacing: .06em;
+    }
+    body.f-apocaliptico .text {
+      font-family: 'Space Grotesk', 'CMG Sans', 'Roboto', sans-serif;
+      text-shadow: 0 2px 18px rgba(255,80,0,.40), 0 0 8px rgba(255,150,0,.30);
+    }
+    body.f-apocaliptico mark { color: #1A0500; }
+    body.f-apocaliptico .palabra { color: #1A0500; }
+    body.f-apocaliptico .status { background: rgba(255,100,0,.18); color: #FFD580; opacity:.85; }
+    body.f-apocaliptico .status.connected { background: rgba(255,150,0,.30); color: #FFE8B8; }
+    body.f-apocaliptico #partBadge {
+      background: linear-gradient(135deg,#FF6B00 0%,#DC2626 100%);
+      color: #FFF5E1;
+      box-shadow: 0 0 18px rgba(255,80,0,.50);
+    }
+    body.f-apocaliptico .fullscreen-button { background: rgba(255,100,0,.22); color: #FFD580; }
+    body.f-apocaliptico #startOverlay { background: rgba(15,4,0,.92); }
+    body.f-apocaliptico #startBtn {
+      background: linear-gradient(135deg,#FF6B00 0%,#DC2626 100%);
+      color: #FFF5E1;
+      box-shadow: 0 4px 26px rgba(255,80,0,.50);
+    }
+    body.f-apocaliptico .ov-note { color: #FFB888; }
+
     #startOverlay {
       position: fixed; inset: 0; z-index: 50;
       background: rgba(5,10,8,0.88);
@@ -219,7 +260,7 @@
     }
 
     // ---------- FONDOS ----------
-    const FONDOS = ["claro", "doodle-claro", "sepia", "oscuro", "doodle-oscuro", "azul", "gamer"];
+    const FONDOS = ["claro", "doodle-claro", "sepia", "oscuro", "doodle-oscuro", "azul", "gamer", "apocaliptico"];
     function doodleSVG(color, op) {
       const s =
         "<g fill='none' stroke='" + color + "' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' opacity='" + op + "'>" +
