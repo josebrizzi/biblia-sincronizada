@@ -242,17 +242,17 @@
     .lock-foot { color: #64748B; font-size: clamp(13px, 1.6vw, 17px); text-align: center; max-width: 600px; line-height: 1.6; }
     .lock-foot b { color: #94A3B8; }
     .lock-owner {
-      position: fixed; top: 18px; right: 18px; z-index: 70;
-      display: none; align-items: center; gap: 10px;
-      padding: 8px 14px; border-radius: 22px;
-      background: rgba(34,211,238,.16); border: 1px solid rgba(34,211,238,.4);
-      color: #A5F3FC; font-family: 'CMG Sans', sans-serif; font-size: 14px; font-weight: bold;
-      cursor: pointer; box-shadow: 0 4px 18px rgba(2,6,23,.4);
+      position: fixed; bottom: 12px; right: 12px; z-index: 70;
+      display: none; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(2,6,23,.35); border: 1px solid rgba(148,163,184,.25);
+      color: #94A3B8; font-size: 13px; cursor: pointer;
+      opacity: .25; transition: opacity .2s, transform .2s;
     }
-    body.f-apocaliptico .lock-owner { background: rgba(255,107,0,.18); border-color: rgba(255,107,0,.5); color: #FFD580; }
+    .lock-owner:hover { opacity: .9; transform: scale(1.08); }
+    body.f-apocaliptico .lock-owner { background: rgba(26,5,0,.45); border-color: rgba(255,107,0,.4); color: #FFB888; }
+    body.f-apocaliptico .lock-owner:hover { opacity: 1; }
     .lock-owner.visible { display: flex; }
-    .lock-owner .dot { width: 9px; height: 9px; border-radius: 50%; background: #22D3EE; box-shadow: 0 0 8px #22D3EE; }
-    body.f-apocaliptico .lock-owner .dot { background: #FF6B00; box-shadow: 0 0 8px #FF6B00; }
   </style>
 </head>
 <body class="f-claro">
@@ -282,12 +282,11 @@
       <div class="lock-digit" id="codeDigit2">-</div>
       <div class="lock-digit" id="codeDigit3">-</div>
     </div>
-    <div class="lock-foot">Decile el código al predicador, o que lo mire de la pantalla.<br>El código cambia cuando se libera la pantalla (botón de arriba a la derecha) o cuando se reinicia la compu.</div>
+    <div class="lock-foot">Decile el código al predicador, o que lo mire de la pantalla.<br>El código cambia cuando se libera la pantalla (icono 🚪 abajo a la derecha) o cuando se reinicia la compu.</div>
   </div>
-  <div id="lockOwner" class="lock-owner" title="Liberar la pantalla">
-    <span class="dot"></span>
-    <span>Pantalla tomada · tocar para liberar</span>
-  </div>
+  <!-- v32: candado de pantalla. status oculto: no distrae -->
+  <div id="status" class="status" style="display:none">Conectando...</div>
+  <div id="lockOwner" class="lock-owner" title="Liberar la pantalla">🚪</div>
 
   <script>
     const reference = document.getElementById("reference");
